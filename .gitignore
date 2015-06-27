@@ -1,0 +1,5 @@
+clock.yml
+*.o
+*.so*
+*.dSYM
+mkmf.log
