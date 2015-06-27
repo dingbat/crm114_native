@@ -6,17 +6,12 @@
 #include "crm114_lib.h"
 #include "crm114_internal.h"
 
-typedef struct ControlBlock
-{
-  CRM114_CONTROLBLOCK *c_controlBlock;
-} ControlBlock;
 
-
-static void cb_mark(ControlBlock *crm)
+static void cb_mark(CRM114_CONTROLBLOCK *crm)
 {
 }
 
-static void cb_free(ControlBlock *crm)
+static void cb_free(CRM114_CONTROLBLOCK *crm)
 {
 }
 
@@ -27,13 +22,12 @@ static VALUE cb_alloc(VALUE klass)
 
 static VALUE cb_init(VALUE obj, VALUE rb_flags)
 {
-  ControlBlock *cb = malloc(sizeof(ControlBlock));
-  cb->c_controlBlock = crm114_new_cb();
+  CRM114_CONTROLBLOCK *cb = crm114_new_cb();
 
   int flags = FIX2INT(rb_flags);
 
-  crm114_cb_setflags(cb->c_controlBlock, flags);
-  crm114_cb_setclassdefaults(cb->c_controlBlock);
+  crm114_cb_setflags(cb, flags);
+  crm114_cb_setclassdefaults(cb);
 
   DATA_PTR(obj) = cb;
   return Qnil;
@@ -41,26 +35,26 @@ static VALUE cb_init(VALUE obj, VALUE rb_flags)
 
 static VALUE cb_setClasses(VALUE obj, VALUE rb_classes_ary)
 {
-  ControlBlock *cb = (ControlBlock *)DATA_PTR(obj);
+  CRM114_CONTROLBLOCK *cb = DATA_PTR(obj);
 
   int length = RARRAY_LEN(rb_classes_ary);
   for (int i = 0; i < length; i++) {
     char *name = RSTRING_PTR(rb_ary_entry(rb_classes_ary, i));
-    strcpy(cb->c_controlBlock->class[i].name, name);
+    strcpy(cb->class[i].name, name);
   }
-  cb->c_controlBlock->how_many_classes = length;
+  cb->how_many_classes = length;
 
   return rb_classes_ary;
 }
 
 static VALUE cb_getClasses(VALUE obj)
 {
-  ControlBlock *cb = (ControlBlock *)DATA_PTR(obj);
+  CRM114_CONTROLBLOCK *cb = DATA_PTR(obj);
 
-  int length = cb->c_controlBlock->how_many_classes;
+  int length = cb->how_many_classes;
   VALUE ary = rb_ary_new2(length);
   for (int i = 0; i < length; i++) {
-    rb_ary_store(ary, i, rb_str_new_cstr(cb->c_controlBlock->class[i].name));
+    rb_ary_store(ary, i, rb_str_new_cstr(cb->class[i].name));
   }
 
   return ary;
