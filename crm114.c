@@ -74,4 +74,15 @@ void Init_CRM114()
   rb_define_method(rb_controlBlock, "initialize", cb_init, 1);
   rb_define_method(rb_controlBlock, "classes=", cb_setClasses, 1);
   rb_define_method(rb_controlBlock, "classes", cb_getClasses, 0);
+
+  // Constants
+  VALUE rb_classifier_flags = rb_define_module_under(rb_mCRM114, "Classifier");
+  rb_define_const(rb_classifier_flags, "OSB", INT2FIX(CRM114_OSB));
+  rb_define_const(rb_classifier_flags, "SVM", INT2FIX(CRM114_SVM));
+  rb_define_const(rb_classifier_flags, "FSCM", INT2FIX(CRM114_FSCM));
+  rb_define_const(rb_classifier_flags, "HYPERSPACE", INT2FIX(CRM114_HYPERSPACE));
+  rb_define_const(rb_classifier_flags, "ENTROPY", INT2FIX(CRM114_ENTROPY));
+  rb_define_const(rb_classifier_flags, "STRING", INT2FIX(CRM114_STRING));
+  rb_define_const(rb_classifier_flags, "UNIQUE", INT2FIX(CRM114_UNIQUE));
+  rb_define_const(rb_classifier_flags, "CROSSLINK", INT2FIX(CRM114_CROSSLINK));
 }
