@@ -50,10 +50,11 @@ class ControlBlockTest < Test::Unit::TestCase
   end
 
   def test_classify
-    @cb.learn_text("a", Alice_frag)
+    @cb.learn_text(0, Alice_frag)
     @cb.learn_text("b", Macbeth_frag)
-    result = @cb.classify(Willows_frag)
+    result = @cb.classify_text(Willows_frag)
 
     assert_equal CRM114::Result, result.class
+    assert_equal 0, result.bestmatch_index
   end
 end

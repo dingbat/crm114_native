@@ -40,6 +40,10 @@ static VALUE result_alloc(VALUE klass);
 static VALUE result_init(VALUE obj);
 static void _result_set(VALUE obj, CRM114_MATCHRESULT result);
 
+static VALUE result_tsprob(VALUE obj);
+static VALUE result_overall_pR(VALUE obj);
+static VALUE result_bestmatch_index(VALUE obj);
+static VALUE result_unk_features(VALUE obj);
 
 // Global classes for static access
 static VALUE ConfigClass;
@@ -67,14 +71,14 @@ void Init_CRM114()
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
 
   // Constants
-  rb_define_const(classifier_class, "OSB", LONG2FIX(CRM114_OSB));
-  rb_define_const(classifier_class, "SVM", LONG2FIX(CRM114_SVM));
-  rb_define_const(classifier_class, "FSCM", LONG2FIX(CRM114_FSCM));
-  rb_define_const(classifier_class, "HYPERSPACE", LONG2FIX(CRM114_HYPERSPACE));
-  rb_define_const(classifier_class, "ENTROPY", LONG2FIX(CRM114_ENTROPY));
-  rb_define_const(classifier_class, "STRING", LONG2FIX(CRM114_STRING));
-  rb_define_const(classifier_class, "UNIQUE", LONG2FIX(CRM114_UNIQUE));
-  rb_define_const(classifier_class, "CROSSLINK", LONG2FIX(CRM114_CROSSLINK));  
+  rb_define_const(classifier_class, "OSB", LONG2NUM(CRM114_OSB));
+  rb_define_const(classifier_class, "SVM", LONG2NUM(CRM114_SVM));
+  rb_define_const(classifier_class, "FSCM", LONG2NUM(CRM114_FSCM));
+  rb_define_const(classifier_class, "HYPERSPACE", LONG2NUM(CRM114_HYPERSPACE));
+  rb_define_const(classifier_class, "ENTROPY", LONG2NUM(CRM114_ENTROPY));
+  rb_define_const(classifier_class, "STRING", LONG2NUM(CRM114_STRING));
+  rb_define_const(classifier_class, "UNIQUE", LONG2NUM(CRM114_UNIQUE));
+  rb_define_const(classifier_class, "CROSSLINK", LONG2NUM(CRM114_CROSSLINK));  
 
   //
   // Config
@@ -95,6 +99,11 @@ void Init_CRM114()
   ResultClass = rb_define_class_under(crm114_module, "Result", rb_cObject);
   rb_define_alloc_func(ResultClass, crm_alloc);
   rb_define_method(ResultClass, "initialize", result_init, 0);
+
+  rb_define_method(ResultClass, "tsprob", result_tsprob, 0);
+  rb_define_method(ResultClass, "overall_pR", result_overall_pR, 0);
+  rb_define_method(ResultClass, "bestmatch_index", result_bestmatch_index, 0);
+  rb_define_method(ResultClass, "unk_features", result_unk_features, 0);
 }
 
 static VALUE crm_alloc(VALUE klass)
@@ -121,7 +130,7 @@ static VALUE crm_init(VALUE obj, VALUE flags)
 
   DATA_PTR(obj) = crm;
 
-  crm114_cb_setflags(crm->cb, FIX2LONG(flags));
+  crm114_cb_setflags(crm->cb, NUM2LONG(flags));
   crm114_cb_setclassdefaults(crm->cb);
 
   return Qnil;
@@ -134,7 +143,8 @@ static VALUE crm_config(VALUE obj)
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
 
-  //crm114_cb_setblockdefaults(crm->cb);
+  // crm114_cb_setblockdefaults(crm->cb);
+  crm->db = crm114_new_db(crm->cb);
 
   return Qnil;
 }
@@ -218,6 +228,30 @@ static void _result_set(VALUE obj, CRM114_MATCHRESULT result)
 {
   Result *res = DATA_PTR(obj);
   res->result = result;
+}
+
+static VALUE result_tsprob(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  return DBL2NUM(res->result.tsprob);
+}
+
+static VALUE result_overall_pR(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  return DBL2NUM(res->result.overall_pR);
+}
+
+static VALUE result_bestmatch_index(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  return INT2FIX(res->result.bestmatch_index);
+}
+
+static VALUE result_unk_features(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  return INT2FIX(res->result.unk_features);
 }
 
 
