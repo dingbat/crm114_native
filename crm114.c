@@ -13,6 +13,12 @@ typedef struct Classifier
   CRM114_ERR err;
 } Classifier;
 
+typedef struct Result
+{
+  CRM114_MATCHRESULT result;
+} Result;
+
+
 static VALUE config_init(VALUE obj, VALUE classifier);
 static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary);
 static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size);
@@ -21,6 +27,7 @@ static VALUE config_setPipeline(VALUE obj);
 
 static VALUE crm_config(VALUE obj);
 static VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text);
+static VALUE crm_classify_text(VALUE obj, VALUE text);
 static VALUE crm_getClasses(VALUE obj);
 static VALUE crm_getDatablockSize(VALUE obj);
 
@@ -29,12 +36,23 @@ static VALUE crm_init(VALUE obj, VALUE flags);
 static void crm_mark(Classifier *crm);
 static void crm_free(Classifier *crm);
 
-// Config class for static access
+static VALUE result_alloc(VALUE klass);
+static VALUE result_init(VALUE obj);
+static void _result_set(VALUE obj, CRM114_MATCHRESULT result);
+
+
+// Global classes for static access
 static VALUE ConfigClass;
+static VALUE ResultClass;
 
 void Init_CRM114()
 {
   VALUE crm114_module = rb_define_module("CRM114");
+
+  //
+  // Classifier
+  ////////
+
   VALUE classifier_class = rb_define_class_under(crm114_module, "Classifier", rb_cObject);
   rb_define_alloc_func(classifier_class, crm_alloc);
   rb_define_method(classifier_class, "initialize", crm_init, 1);
@@ -46,6 +64,7 @@ void Init_CRM114()
   // Methods
   rb_define_method(classifier_class, "config", crm_config, 0);
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
+  rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
 
   // Constants
   rb_define_const(classifier_class, "OSB", LONG2FIX(CRM114_OSB));
@@ -57,6 +76,10 @@ void Init_CRM114()
   rb_define_const(classifier_class, "UNIQUE", LONG2FIX(CRM114_UNIQUE));
   rb_define_const(classifier_class, "CROSSLINK", LONG2FIX(CRM114_CROSSLINK));  
 
+  //
+  // Config
+  ////////
+
   ConfigClass = rb_define_class_under(classifier_class, "Config", rb_cObject);
   rb_define_alloc_func(ConfigClass, crm_alloc);
   rb_define_method(ConfigClass, "initialize", config_init, 1);
@@ -64,6 +87,14 @@ void Init_CRM114()
   rb_define_method(ConfigClass, "datablock_size=", config_setDatablockSize, 1);
   rb_define_method(ConfigClass, "regex=", config_setRegex, 1);
   rb_define_method(ConfigClass, "pipeline=", config_setPipeline, 0); //TODO
+
+  //
+  // Result
+  ////////
+
+  ResultClass = rb_define_class_under(crm114_module, "Result", rb_cObject);
+  rb_define_alloc_func(ResultClass, crm_alloc);
+  rb_define_method(ResultClass, "initialize", result_init, 0);
 }
 
 static VALUE crm_alloc(VALUE klass)
@@ -103,7 +134,7 @@ static VALUE crm_config(VALUE obj)
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
 
-  crm114_cb_setblockdefaults(crm->cb);
+  //crm114_cb_setblockdefaults(crm->cb);
 
   return Qnil;
 }
@@ -124,7 +155,7 @@ static VALUE crm_getClasses(VALUE obj)
 static VALUE crm_getDatablockSize(VALUE obj)
 {
   Classifier *crm = DATA_PTR(obj);
-  return INT2FIX(crm->cb->datablock_size);
+  return LONG2NUM(crm->cb->datablock_size);
 }
 
 VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
@@ -133,6 +164,7 @@ VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
 
   int idx;
   if (TYPE(whichClass) == T_STRING) {
+
     //get the index of the string
     char *string = RSTRING_PTR(whichClass);
     int length = crm->cb->how_many_classes;
@@ -151,6 +183,41 @@ VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
   crm114_learn_text(&(crm->db), idx, text_str, text_len);
 
   return Qnil;
+}
+
+VALUE crm_classify_text(VALUE obj, VALUE text)
+{
+  Classifier *crm = DATA_PTR(obj);
+
+  char *text_str = RSTRING_PTR(text);
+  int text_len = RSTRING_LEN(text);
+
+  CRM114_MATCHRESULT result;
+  crm->err = crm114_classify_text(crm->db, text_str, text_len, &result);
+  if (crm->err) {
+    return Qnil;
+  } else {
+    VALUE rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
+    _result_set(rb_result, result);
+    return rb_result;
+  }
+}
+
+
+///////////////
+//// RESULT
+///////////
+
+static VALUE result_init(VALUE obj)
+{
+  DATA_PTR(obj) = malloc(sizeof(Result));
+  return Qnil;
+}
+
+static void _result_set(VALUE obj, CRM114_MATCHRESULT result)
+{
+  Result *res = DATA_PTR(obj);
+  res->result = result;
 }
 
 
@@ -181,7 +248,7 @@ static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary)
 static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size)
 {
   Classifier *classifier = DATA_PTR(obj);
-  classifier->cb->datablock_size = FIX2INT(rb_size);
+  classifier->cb->datablock_size = NUM2LONG(rb_size);
   return rb_size;
 }
 
@@ -202,5 +269,4 @@ static VALUE config_setPipeline(VALUE obj)
 
   return Qnil;
 }
-
 
