@@ -3,8 +3,9 @@ require 'test/unit'
 require_relative '../CRM114'
 
 class ControlBlockTest < Test::Unit::TestCase
-  def test_classes
-    cb = CRM114.new(CRM114::SVM | CRM114::STRING)
+  def test_config
+    flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
+    cb = CRM114::Classifier.new(flags)
     cb.config do |config|
       config.classes = ["a","b","c"]
     end
