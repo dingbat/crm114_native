@@ -38,19 +38,37 @@ class ControlBlockTest < Test::Unit::TestCase
   def setup
     flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
     @cb = CRM114::Classifier.new(flags)
+  end
+
+  def test_config
+    classes = {a:1,b:0}
+
     @cb.config do |config|
       config.datablock_size = 8000000
       config.classes = ["a","b"]
     end
-  end
 
-  def test_config
     assert_equal 8000000, @cb.datablock_size
-    classes = {a:1,b:0}
+    assert_equal classes, @cb.classes
+
+    @cb.config do |config|
+      config.classes = {"a" => 1, "b" => 0}
+    end
+    assert_equal classes, @cb.classes
+
+    @cb.config do |config|
+      config.classes = classes
+    end
     assert_equal classes, @cb.classes
   end
 
   def test_classify
+    @cb.config do |config|
+      config.datablock_size = 8000000
+      config.classes = ["a","b"]
+      config.classes = {a:1, b:0}
+    end
+
     @cb.learn_text(0, Alice_frag)
     @cb.learn_text(:b, Macbeth_frag)
     result = @cb.classify_text(Willows_frag)

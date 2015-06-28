@@ -312,18 +312,43 @@ static VALUE config_init(VALUE obj, VALUE classifier)
   return Qnil;
 }
 
-static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary)
+int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
 {
   Classifier *classifier = DATA_PTR(obj);
 
-  int length = RARRAY_LEN(rb_classes_ary);
-  classifier->cb->how_many_classes = length;
-  for (int i = 0; i < length; i++) {
-    char *name = RSTRING_PTR(rb_ary_entry(rb_classes_ary, i));
-    strcpy(classifier->cb->class[i].name, name);
+  const char *name;
+  if (TYPE(key) == T_STRING) {
+    name = RSTRING_PTR(key);
+  } else {
+    name = rb_id2name(SYM2ID(key));
   }
 
-  return rb_classes_ary;
+  int i = classifier->cb->how_many_classes;
+  strcpy(classifier->cb->class[i].name, name);
+  classifier->cb->class[i].success = FIX2INT(val);
+  classifier->cb->how_many_classes++;
+
+  return ST_CONTINUE;
+}
+
+static VALUE config_setClasses(VALUE obj, VALUE rb_classes)
+{
+  Classifier *classifier = DATA_PTR(obj);
+
+  if (TYPE(rb_classes) == T_ARRAY) {
+    int length = RARRAY_LEN(rb_classes);
+    classifier->cb->how_many_classes = length;
+    for (int i = 0; i < length; i++) {
+      char *name = RSTRING_PTR(rb_ary_entry(rb_classes, i));
+      strcpy(classifier->cb->class[i].name, name);
+    }
+  }
+  else if (TYPE(rb_classes) == T_HASH) {
+    classifier->cb->how_many_classes = 0;
+    rb_hash_foreach(rb_classes, classes_hash_foreach, obj);
+  }
+
+  return rb_classes;
 }
 
 static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size)
