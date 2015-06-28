@@ -46,12 +46,13 @@ class ControlBlockTest < Test::Unit::TestCase
 
   def test_config
     assert_equal 8000000, @cb.datablock_size
-    assert_equal ["a","b"], @cb.classes
+    classes = {a:1,b:0}
+    assert_equal classes, @cb.classes
   end
 
   def test_classify
     @cb.learn_text(0, Alice_frag)
-    @cb.learn_text("b", Macbeth_frag)
+    @cb.learn_text(:b, Macbeth_frag)
     result = @cb.classify_text(Willows_frag)
 
     assert_equal CRM114::Result, result.class

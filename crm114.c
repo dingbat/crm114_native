@@ -169,12 +169,12 @@ static VALUE crm_getClasses(VALUE obj)
   Classifier *crm = DATA_PTR(obj);
 
   int length = crm->cb->how_many_classes;
-  VALUE ary = rb_ary_new2(length);
+  VALUE hash = rb_hash_new();
   for (int i = 0; i < length; i++) {
-    rb_ary_store(ary, i, rb_str_new_cstr(crm->cb->class[i].name));
+    rb_hash_aset(hash, ID2SYM(rb_intern(crm->cb->class[i].name)), INT2FIX(crm->cb->class[i].success));
   }
 
-  return ary;
+  return hash;
 }
 
 static VALUE crm_getDatablockSize(VALUE obj)
@@ -188,10 +188,14 @@ VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
   Classifier *crm = DATA_PTR(obj);
 
   int idx;
-  if (TYPE(whichClass) == T_STRING) {
-
+  if (TYPE(whichClass) == T_STRING || TYPE(whichClass) == T_SYMBOL) {
+    const char *string;
+    if (TYPE(whichClass) == T_SYMBOL) {
+      string = rb_id2name(SYM2ID(whichClass));
+    } else {
+      string = RSTRING_PTR(whichClass);
+    }
     //get the index of the string
-    char *string = RSTRING_PTR(whichClass);
     int length = crm->cb->how_many_classes;
     for (idx = 0; idx < length; idx++) {
       if (strcmp(crm->cb->class[idx].name, string) == 0) {
