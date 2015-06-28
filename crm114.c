@@ -29,6 +29,7 @@ static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary);
 static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size);
 static VALUE config_setRegex(VALUE obj, VALUE regex);
 static VALUE config_setPipeline(VALUE obj);
+static VALUE config_loadDB(VALUE obj, VALUE mem);
 
 // CLASSIFIER
 
@@ -42,6 +43,9 @@ static VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text);
 static VALUE crm_classify_text(VALUE obj, VALUE text);
 static VALUE crm_getClasses(VALUE obj);
 static VALUE crm_getDatablockSize(VALUE obj);
+
+static VALUE crm_dumpMemory(VALUE obj);
+static VALUE crm_loadMemory(VALUE obj, VALUE mem);
 
 //RESULT
 
@@ -81,6 +85,7 @@ void Init_CRM114()
   rb_define_method(classifier_class, "config", crm_config, 0);
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
+  rb_define_method(classifier_class, "dump_memory", crm_dumpMemory, 0);
 
   // Constants
   rb_define_const(classifier_class, "OSB", LONG2NUM(CRM114_OSB));
@@ -103,6 +108,7 @@ void Init_CRM114()
   rb_define_method(ConfigClass, "datablock_size=", config_setDatablockSize, 1);
   rb_define_method(ConfigClass, "regex=", config_setRegex, 1);
   rb_define_method(ConfigClass, "pipeline=", config_setPipeline, 0); //TODO
+  rb_define_method(ConfigClass, "load_datablock", config_loadDB, 1);
 
   //
   // Result
@@ -142,6 +148,7 @@ static VALUE crm_init(VALUE obj, VALUE flags)
 {
   Classifier *crm = malloc(sizeof(Classifier));
   crm->cb = crm114_new_cb();
+  crm->db = NULL;
 
   DATA_PTR(obj) = crm;
 
@@ -159,7 +166,9 @@ static VALUE crm_config(VALUE obj)
   rb_yield(new_config);
 
   // crm114_cb_setblockdefaults(crm->cb);
-  crm->db = crm114_new_db(crm->cb);
+  if (crm->db == NULL) {
+    crm->db = crm114_new_db(crm->cb);
+  }
 
   return Qnil;
 }
@@ -232,6 +241,13 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
   }
 }
 
+VALUE crm_dumpMemory(VALUE obj)
+{
+  Classifier *classifier = DATA_PTR(obj);
+
+  VALUE rb_str = rb_str_new((char *)(classifier->db), classifier->cb->datablock_size);
+  return rb_str;
+}
 
 ///////////////
 //// RESULT
@@ -309,6 +325,16 @@ static void config_free(Classifier *crm)
 static VALUE config_init(VALUE obj, VALUE classifier)
 {
   DATA_PTR(obj) = DATA_PTR(classifier);
+  return Qnil;
+}
+
+static VALUE config_loadDB(VALUE obj, VALUE mem)
+{
+  Classifier *classifier = DATA_PTR(obj);
+
+  classifier->db = crm114_new_db(classifier->cb);
+  strcpy((char*)(classifier->db), RSTRING_PTR(mem));
+
   return Qnil;
 }
 
