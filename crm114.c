@@ -18,6 +18,11 @@ typedef struct Result
   CRM114_MATCHRESULT result;
 } Result;
 
+// CONFIG
+
+static VALUE config_alloc(VALUE klass);
+static void config_mark(Classifier *crm);
+static void config_free(Classifier *crm);
 
 static VALUE config_init(VALUE obj, VALUE classifier);
 static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary);
@@ -25,25 +30,32 @@ static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size);
 static VALUE config_setRegex(VALUE obj, VALUE regex);
 static VALUE config_setPipeline(VALUE obj);
 
+// CLASSIFIER
+
+static VALUE crm_alloc(VALUE klass);
+static void crm_mark(Classifier *crm);
+static void crm_free(Classifier *crm);
+
+static VALUE crm_init(VALUE obj, VALUE flags);
 static VALUE crm_config(VALUE obj);
 static VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text);
 static VALUE crm_classify_text(VALUE obj, VALUE text);
 static VALUE crm_getClasses(VALUE obj);
 static VALUE crm_getDatablockSize(VALUE obj);
 
-static VALUE crm_alloc(VALUE klass);
-static VALUE crm_init(VALUE obj, VALUE flags);
-static void crm_mark(Classifier *crm);
-static void crm_free(Classifier *crm);
+//RESULT
 
 static VALUE result_alloc(VALUE klass);
+static void result_mark(Result *crm);
+static void result_free(Result *crm);
+
 static VALUE result_init(VALUE obj);
 static void _result_set(VALUE obj, CRM114_MATCHRESULT result);
-
 static VALUE result_tsprob(VALUE obj);
 static VALUE result_overall_pR(VALUE obj);
 static VALUE result_bestmatch_index(VALUE obj);
 static VALUE result_unk_features(VALUE obj);
+
 
 // Global classes for static access
 static VALUE ConfigClass;
@@ -85,7 +97,7 @@ void Init_CRM114()
   ////////
 
   ConfigClass = rb_define_class_under(classifier_class, "Config", rb_cObject);
-  rb_define_alloc_func(ConfigClass, crm_alloc);
+  rb_define_alloc_func(ConfigClass, config_alloc);
   rb_define_method(ConfigClass, "initialize", config_init, 1);
   rb_define_method(ConfigClass, "classes=", config_setClasses, 1);
   rb_define_method(ConfigClass, "datablock_size=", config_setDatablockSize, 1);
@@ -97,7 +109,7 @@ void Init_CRM114()
   ////////
 
   ResultClass = rb_define_class_under(crm114_module, "Result", rb_cObject);
-  rb_define_alloc_func(ResultClass, crm_alloc);
+  rb_define_alloc_func(ResultClass, result_alloc);
   rb_define_method(ResultClass, "initialize", result_init, 0);
 
   rb_define_method(ResultClass, "tsprob", result_tsprob, 0);
@@ -105,6 +117,10 @@ void Init_CRM114()
   rb_define_method(ResultClass, "bestmatch_index", result_bestmatch_index, 0);
   rb_define_method(ResultClass, "unk_features", result_unk_features, 0);
 }
+
+///////////////////////
+/// CLASSIFIER
+//////////////
 
 static VALUE crm_alloc(VALUE klass)
 {
@@ -117,11 +133,10 @@ static void crm_mark(Classifier *crm)
 
 static void crm_free(Classifier *crm)
 {
+  free(crm->cb);
+  free(crm->db);
+  free(crm);
 }
-
-///////////////////////
-/// CLASSIFIER
-//////////////
 
 static VALUE crm_init(VALUE obj, VALUE flags)
 {
@@ -218,6 +233,20 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
 //// RESULT
 ///////////
 
+static VALUE result_alloc(VALUE klass)
+{
+  return Data_Wrap_Struct(klass, result_mark, result_free, NULL);
+}
+
+static void result_mark(Result *res)
+{
+}
+
+static void result_free(Result *res)
+{
+  free(res);
+}
+
 static VALUE result_init(VALUE obj)
 {
   DATA_PTR(obj) = malloc(sizeof(Result));
@@ -258,6 +287,20 @@ static VALUE result_unk_features(VALUE obj)
 ///////////////
 //// CONFIG
 ///////////
+
+static VALUE config_alloc(VALUE klass)
+{
+  return Data_Wrap_Struct(klass, config_mark, config_free, NULL);
+}
+
+static void config_mark(Classifier *crm)
+{
+}
+
+static void config_free(Classifier *crm)
+{
+  //nothing, since it's just an assignment on init
+}
 
 static VALUE config_init(VALUE obj, VALUE classifier)
 {
