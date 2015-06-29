@@ -55,10 +55,10 @@ static void result_free(Result *crm);
 
 static VALUE result_init(VALUE obj);
 static void _result_set(VALUE obj, CRM114_MATCHRESULT result);
-static VALUE result_tsprob(VALUE obj);
-static VALUE result_overall_pR(VALUE obj);
-static VALUE result_bestmatch_index(VALUE obj);
-static VALUE result_unk_features(VALUE obj);
+static VALUE result_total_success_probability(VALUE obj);
+static VALUE result_overall_probability(VALUE obj);
+static VALUE result_best_match(VALUE obj);
+static VALUE result_text_features(VALUE obj);
 
 
 // Global classes for static access
@@ -118,10 +118,10 @@ void Init_CRM114()
   rb_define_alloc_func(ResultClass, result_alloc);
   rb_define_method(ResultClass, "initialize", result_init, 0);
 
-  rb_define_method(ResultClass, "tsprob", result_tsprob, 0);
-  rb_define_method(ResultClass, "overall_pR", result_overall_pR, 0);
-  rb_define_method(ResultClass, "bestmatch_index", result_bestmatch_index, 0);
-  rb_define_method(ResultClass, "unk_features", result_unk_features, 0);
+  rb_define_method(ResultClass, "total_success_probability", result_total_success_probability, 0);
+  rb_define_method(ResultClass, "overall_probability", result_overall_probability, 0);
+  rb_define_method(ResultClass, "best_match", result_best_match, 0);
+  rb_define_method(ResultClass, "text_features", result_text_features, 0);
 }
 
 ///////////////////////
@@ -279,25 +279,26 @@ static void _result_set(VALUE obj, CRM114_MATCHRESULT result)
   res->result = result;
 }
 
-static VALUE result_tsprob(VALUE obj)
+static VALUE result_total_success_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
   return DBL2NUM(res->result.tsprob);
 }
 
-static VALUE result_overall_pR(VALUE obj)
+static VALUE result_overall_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
   return DBL2NUM(res->result.overall_pR);
 }
 
-static VALUE result_bestmatch_index(VALUE obj)
+static VALUE result_best_match(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
-  return INT2FIX(res->result.bestmatch_index);
+  char *class_name = res->result.class[res->result.bestmatch_index].name;
+  return ID2SYM(rb_intern(class_name));
 }
 
-static VALUE result_unk_features(VALUE obj)
+static VALUE result_text_features(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
   return INT2FIX(res->result.unk_features);

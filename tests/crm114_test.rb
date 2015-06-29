@@ -73,7 +73,7 @@ class CRM114Test < Test::Unit::TestCase
     result = @cb.classify_text(Willows_frag)
 
     assert_equal CRM114::Result, result.class
-    assert_equal 0, result.bestmatch_index
+    assert_equal :a, result.best_match
   end
 
   def test_serialize
@@ -94,7 +94,7 @@ class CRM114Test < Test::Unit::TestCase
 
     result2 = cb2.classify_text(Willows_frag)
 
-    assert_equal result.bestmatch_index, result2.bestmatch_index
+    assert_equal result.best_match, result2.best_match
 
     # TODO
     # would be nice to compare the dumps of both, but we're getting
