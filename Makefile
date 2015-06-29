@@ -10,7 +10,7 @@ ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
 
-srcdir = .
+srcdir = ext/crm114-native
 topdir = /Users/dan/.rvm/rubies/ruby-2.0.0-p247/include/ruby-2.0.0
 hdrdir = $(topdir)
 arch_hdrdir = /Users/dan/.rvm/rubies/ruby-2.0.0-p247/include/ruby-2.0.0/x86_64-darwin12.3.0
@@ -79,7 +79,7 @@ debugflags = -ggdb3
 warnflags = -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration
 CCDLFLAGS = -fno-common
 CFLAGS   = $(CCDLFLAGS) -O3 -I/Users/mpapis/.sm/pkg/active/include -fPIC -pipe $(ARCH_FLAG)
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/Users/dan/projects/pivot/crm114/libcrm114/include
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/Users/dan/projects/pivot/crm114/ext/crm114-native/libcrm114/include
 DEFS     = 
 CPPFLAGS =  -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) $(cxxflags) $(ARCH_FLAG)
@@ -120,8 +120,8 @@ TOUCH = exit >
 
 preload = 
 
-libpath = . $(libdir) /Users/dan/projects/pivot/crm114/libcrm114/lib
-LIBPATH =  -L. -L$(libdir) -L/Users/dan/projects/pivot/crm114/libcrm114/lib
+libpath = . $(libdir) /Users/dan/projects/pivot/crm114/ext/crm114-native/libcrm114/lib
+LIBPATH =  -L. -L$(libdir) -L/Users/dan/projects/pivot/crm114/ext/crm114-native/libcrm114/lib
 DEFFILE = 
 
 CLEANFILES = mkmf.log
@@ -137,8 +137,8 @@ ORIG_SRCS = crm114.c
 SRCS = $(ORIG_SRCS) 
 OBJS = crm114.o
 HDRS = 
-TARGET = CRM114
-TARGET_NAME = CRM114
+TARGET = crm114-native
+TARGET_NAME = crm114
 TARGET_ENTRY = Init_$(TARGET_NAME)
 DLLIB = $(TARGET).bundle
 EXTSTATIC = 
@@ -188,7 +188,7 @@ install-rb-default: pre-install-rb-default
 pre-install-rb: Makefile
 pre-install-rb-default: Makefile
 pre-install-rb-default:
-	$(ECHO) installing default CRM114 libraries
+	$(ECHO) installing default crm114-native libraries
 ./.RUBYARCHDIR.time:
 	$(Q) $(MAKEDIRS) $(RUBYARCHDIR)
 	$(Q) $(TOUCH) $@
