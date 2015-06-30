@@ -1,6 +1,7 @@
 require 'test/unit'
 
-require 'crm114'
+# require_relative '../ext/crm114-native/crm114-native'
+require 'crm114-native'
 
 Alice_frag = \
     "So she was considering in her own mind (as well as she could, for the\n" \
