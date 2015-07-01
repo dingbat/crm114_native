@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-gem "crm114-native", path: "."
+gem "crm114_native", path: "."
 gem "rake-compiler"

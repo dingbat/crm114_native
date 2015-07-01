@@ -1,3 +1,3 @@
 require 'rake/extensiontask'
 
-Rake::ExtensionTask.new('crm114-native')
+Rake::ExtensionTask.new('crm114_native')

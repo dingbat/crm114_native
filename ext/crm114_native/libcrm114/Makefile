@@ -31,7 +31,7 @@
 #CFLAGS += -O3 -DDO_INLINES
 #
 #GCC flags for debugging, no optimization
-CFLAGS += -g
+#CFLAGS += -g
 #
 #GCC and LD flags for debugging, no optimization, and profile for speed
 #CFLAGS += -g -pg
@@ -40,8 +40,9 @@ CFLAGS += -g
 #GCC and LD flags for debugging, no optimization, and profile for coverage
 #CFLAGS += -g -fprofile-arcs -ftest-coverage
 #LDFLAGS += -fprofile-arcs -ftest-coverage
+# LDFLAGS += -static -static-libgcc
 
-CFLAGS += -Iinclude -fpic
+CFLAGS += -Iinclude
 
 #always use this: C99, and check source code carefully
 CFLAGS += -std=c99 -pedantic -Wall -Wextra -Wpointer-arith -Wstrict-prototypes
@@ -86,7 +87,6 @@ crm114_base.o					\
 crm114_markov.o					\
 crm114_markov_microgroom.o			\
 crm114_bit_entropy.o				\
-crm114_hyperspace.o				\
 crm114_svm.o					\
 crm114_svm_lib_fncts.o				\
 crm114_svm_quad_prog.o				\
@@ -101,21 +101,38 @@ crm114_strnhash.o				\
 crm114_util.o					\
 crm114_regex_tre.o
 
+LIBC_FILES =					\
+crm114_base.c					\
+crm114_markov.c					\
+crm114_markov_microgroom.c			\
+crm114_bit_entropy.c				\
+crm114_svm.c					\
+crm114_svm_lib_fncts.c				\
+crm114_svm_quad_prog.c				\
+crm114_fast_substring_compression.c		\
+crm114_pca.c					\
+crm114_pca_lib_fncts.c				\
+crm114_matrix.c					\
+crm114_matrix_util.c				\
+crm114_datalib.c				\
+crm114_vector_tokenize.c			\
+crm114_strnhash.c				\
+crm114_util.c					\
+crm114_regex_tre.c
+
 LIBOBJS = $(foreach obj, $(LIBOBJ_FILES), lib/$(obj))
 
-SO_NAME = libcrm114.so
-SO_VERSION = 1
-LIB_NAME = $(SO_NAME).$(SO_VERSION)
-LIB = lib/$(SO_NAME)
+STATIC_NAME = libcrm114.a
+LIB = lib/$(STATIC_NAME)
 LIBLD_PATH = $(abspath lib)
 
-all: $(LIB) tests/test tests/simple_demo
+all: $(LIB)
 
 $(LIBOBJS): $(LIBHDRS) Makefile
 
-$(LIB) lib/$(LIB_NAME): $(LIBOBJS) Makefile
-	$(CC) -shared -Wl,-install_name,$(LIB_NAME) -o lib/$(LIB_NAME) $(LIBOBJS) -ltre
-	ln -sf $(LIB_NAME) $(LIB)
+$(LIB): $(LIBOBJS) Makefile
+	ar rcs libcrm114.a $(LIBOBJS)
+	
 
 lib/%.o: lib/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -129,7 +146,7 @@ clean_simple_demo:
 	rm -f tests/simple_demo tests/simple_demo.map tests/simple_demo.o {,tests/}simple_demo_datablock.txt
 
 clean_lib:
-	rm -f $(LIB) $(LIBOBJS) lib/$(LIB_NAME)
+	rm -f $(LIB) $(LIBOBJS) lib/$(STATIC_NAME)
 
 clean_profiling:
 	rm -f gmon.out *.gcov {,lib/}*.gcno {,lib/}*.gcda

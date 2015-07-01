@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    crm114-native (1.0)
+    crm114_native (1.0)
 
 GEM
   remote: https://rubygems.org/
@@ -14,5 +14,5 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  crm114-native!
+  crm114_native!
   rake-compiler

@@ -65,7 +65,7 @@ static VALUE result_text_features(VALUE obj);
 static VALUE ConfigClass;
 static VALUE ResultClass;
 
-void Init_CRM114()
+void Init_crm114_native()
 {
   VALUE crm114_module = rb_define_module("CRM114");
 
