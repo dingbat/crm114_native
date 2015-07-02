@@ -42,7 +42,7 @@
 #LDFLAGS += -fprofile-arcs -ftest-coverage
 # LDFLAGS += -static -static-libgcc
 
-CFLAGS += -Iinclude
+CFLAGS += -Iinclude -fPIC
 
 #always use this: C99, and check source code carefully
 CFLAGS += -std=c99 -pedantic -Wall -Wextra -Wpointer-arith -Wstrict-prototypes
@@ -133,20 +133,13 @@ $(LIBOBJS): $(LIBHDRS) Makefile
 $(LIB): $(LIBOBJS) Makefile
 	ar rcs libcrm114.a $(LIBOBJS)
 	
-
 lib/%.o: lib/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-clean: clean_test clean_simple_demo clean_lib clean_profiling
-
-clean_test:
-	rm -f tests/test tests/test.map tests/test.o
-
-clean_simple_demo:
-	rm -f tests/simple_demo tests/simple_demo.map tests/simple_demo.o {,tests/}simple_demo_datablock.txt
+clean: clean_lib clean_profiling
 
 clean_lib:
-	rm -f $(LIB) $(LIBOBJS) lib/$(STATIC_NAME)
+	rm -f $(LIB) $(LIBOBJS) $(STATIC_NAME)
 
 clean_profiling:
 	rm -f gmon.out *.gcov {,lib/}*.gcno {,lib/}*.gcda
