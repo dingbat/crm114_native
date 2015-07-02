@@ -6,3 +6,4 @@ mkmf.log
 ext/crm114_native/Makefile
 tmp
 crm114_native.bundle
+crm114_native.gem
