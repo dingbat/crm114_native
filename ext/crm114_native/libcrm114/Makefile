@@ -42,7 +42,7 @@
 #LDFLAGS += -fprofile-arcs -ftest-coverage
 # LDFLAGS += -static -static-libgcc
 
-CFLAGS += -Iinclude -fPIC
+CFLAGS += -Iinclude -fpic
 
 #always use this: C99, and check source code carefully
 CFLAGS += -std=c99 -pedantic -Wall -Wextra -Wpointer-arith -Wstrict-prototypes
