@@ -9,6 +9,7 @@ have_library("tre") or raise
 
 dir_config("crm114", File.join(path,'include'), path)
 
-$LOCAL_LIBS << '-lcrm114'
+$LOCAL_LIBS << ' -lcrm114'
+$CFLAGS << ' -std=c99'
 
 create_makefile("crm114_native")
