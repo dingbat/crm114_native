@@ -350,7 +350,7 @@ static VALUE config_loadDB(VALUE obj, VALUE mem)
 int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
 {
   Classifier *classifier = DATA_PTR(obj);
-
+  int numClasses;
   const char *name;
   if (TYPE(key) == T_STRING) {
     name = RSTRING_PTR(key);
@@ -358,7 +358,7 @@ int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
     name = rb_id2name(SYM2ID(key));
   }
 
-  int i = classifier->cb->how_many_classes;
+  numClasses = classifier->cb->how_many_classes;
   strcpy(classifier->cb->class[i].name, name);
   classifier->cb->class[i].success = FIX2INT(val);
   classifier->cb->how_many_classes++;
