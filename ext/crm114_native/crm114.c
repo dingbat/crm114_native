@@ -45,7 +45,6 @@ static VALUE crm_getClasses(VALUE obj);
 static VALUE crm_getDatablockSize(VALUE obj);
 
 static VALUE crm_dumpMemory(VALUE obj);
-static VALUE crm_loadMemory(VALUE obj, VALUE mem);
 
 //RESULT
 
@@ -175,11 +174,14 @@ static VALUE crm_config(VALUE obj)
 
 static VALUE crm_getClasses(VALUE obj)
 {
+  VALUE hash;
+  int length;
   Classifier *crm = DATA_PTR(obj);
 
-  int length = crm->cb->how_many_classes;
-  VALUE hash = rb_hash_new();
-  for (int i = 0; i < length; i++) {
+  length = crm->cb->how_many_classes;
+  hash = rb_hash_new();
+  int i;
+  for (i = 0; i < length; i++) {
     rb_hash_aset(hash, ID2SYM(rb_intern(crm->cb->class[i].name)), INT2FIX(crm->cb->class[i].success));
   }
 
@@ -194,9 +196,13 @@ static VALUE crm_getDatablockSize(VALUE obj)
 
 VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
 {
+  int idx;
+  int length;
   Classifier *crm = DATA_PTR(obj);
 
-  int idx;
+  char *text_str;
+  int text_len;
+
   if (TYPE(whichClass) == T_STRING || TYPE(whichClass) == T_SYMBOL) {
     const char *string;
     if (TYPE(whichClass) == T_SYMBOL) {
@@ -205,7 +211,7 @@ VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
       string = RSTRING_PTR(whichClass);
     }
     //get the index of the string
-    int length = crm->cb->how_many_classes;
+    length = crm->cb->how_many_classes;
     for (idx = 0; idx < length; idx++) {
       if (strcmp(crm->cb->class[idx].name, string) == 0) {
         break;
@@ -215,8 +221,8 @@ VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
     idx = FIX2INT(whichClass);
   }
 
-  char *text_str = RSTRING_PTR(text);
-  int text_len = RSTRING_LEN(text);
+  text_str = RSTRING_PTR(text);
+  text_len = RSTRING_LEN(text);
 
   crm114_learn_text(&(crm->db), idx, text_str, text_len);
 
@@ -230,12 +236,14 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
   char *text_str = RSTRING_PTR(text);
   int text_len = RSTRING_LEN(text);
 
+  VALUE rb_result;
+
   CRM114_MATCHRESULT result;
   crm->err = crm114_classify_text(crm->db, text_str, text_len, &result);
   if (crm->err) {
     return Qnil;
   } else {
-    VALUE rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
+    rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
     _result_set(rb_result, result);
     return rb_result;
   }
@@ -360,13 +368,18 @@ int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
 
 static VALUE config_setClasses(VALUE obj, VALUE rb_classes)
 {
-  Classifier *classifier = DATA_PTR(obj);
+  int i;
+  int length;
+  char *name;
+  Classifier *classifier;
+
+  classifier = DATA_PTR(obj);
 
   if (TYPE(rb_classes) == T_ARRAY) {
-    int length = RARRAY_LEN(rb_classes);
+    length = RARRAY_LEN(rb_classes);
     classifier->cb->how_many_classes = length;
-    for (int i = 0; i < length; i++) {
-      char *name = RSTRING_PTR(rb_ary_entry(rb_classes, i));
+    for (i = 0; i < length; i++) {
+      name = RSTRING_PTR(rb_ary_entry(rb_classes, i));
       strcpy(classifier->cb->class[i].name, name);
     }
   }
