@@ -10,12 +10,12 @@ typedef struct Classifier
 {
   CRM114_CONTROLBLOCK *cb;
   CRM114_DATABLOCK *db;
-  CRM114_ERR err;
 } Classifier;
 
 typedef struct Result
 {
   CRM114_MATCHRESULT result;
+  CRM114_ERR error;
 } Result;
 
 // CONFIG
@@ -53,12 +53,14 @@ static void result_mark(Result *crm);
 static void result_free(Result *crm);
 
 static VALUE result_init(VALUE obj);
-static void _result_set(VALUE obj, CRM114_MATCHRESULT result);
 static VALUE result_total_success_probability(VALUE obj);
 static VALUE result_overall_probability(VALUE obj);
 static VALUE result_best_match(VALUE obj);
 static VALUE result_text_features(VALUE obj);
 
+//(private)
+static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result);
+static void _result_set_error(VALUE obj, CRM114_ERR error);
 
 // Global classes for static access
 static VALUE ConfigClass;
@@ -232,14 +234,19 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
   int text_len = RSTRING_LEN(text);
 
   CRM114_MATCHRESULT result;
-  crm->err = crm114_classify_text(crm->db, text_str, text_len, &result);
-  if (crm->err) {
-    return Qnil;
+  
+  CRM114_ERR err;
+  err = crm114_classify_text(crm->db, text_str, text_len, &result);
+  
+  VALUE rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
+  
+  if (err) {
+    _result_set_error(rb_result, err);
   } else {
-    VALUE rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
-    _result_set(rb_result, result);
-    return rb_result;
+    _result_set_success(rb_result, result);
   }
+  
+  return rb_result;
 }
 
 VALUE crm_dump_memory(VALUE obj)
@@ -270,31 +277,47 @@ static void result_free(Result *res)
 
 static VALUE result_init(VALUE obj)
 {
-  DATA_PTR(obj) = malloc(sizeof(Result));
+  Result *res = calloc(1, sizeof(Result)); //calloc so error starts as null
+  DATA_PTR(obj) = res;
   return Qnil;
 }
 
-static void _result_set(VALUE obj, CRM114_MATCHRESULT result)
+static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result)
 {
   Result *res = DATA_PTR(obj);
   res->result = result;
 }
 
+static void _result_set_error(VALUE obj, CRM114_ERR error)
+{
+  Result *res = DATA_PTR(obj);
+  res->error = error;
+}
+
 static VALUE result_total_success_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
+  if (res->error) {
+    return Qnil;
+  }
   return DBL2NUM(res->result.tsprob);
 }
 
 static VALUE result_overall_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
+  if (res->error) {
+    return Qnil;
+  }
   return DBL2NUM(res->result.overall_pR);
 }
 
 static VALUE result_best_match(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
+  if (res->error) {
+    return Qnil;
+  }
   char *class_name = res->result.class[res->result.bestmatch_index].name;
   return ID2SYM(rb_intern(class_name));
 }
@@ -302,6 +325,9 @@ static VALUE result_best_match(VALUE obj)
 static VALUE result_text_features(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
+  if (res->error) {
+    return Qnil;
+  }
   return INT2FIX(res->result.unk_features);
 }
 
