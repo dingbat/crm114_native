@@ -67,12 +67,13 @@ class CRM114Test < Test::Unit::TestCase
   end
 
   def test_classify
-    @cb.learn_text(0, Alice_frag)
-    @cb.learn_text("a", Hound_frag)
-    @cb.learn_text(:b, Macbeth_frag)
+    assert_equal CRM114::Error::OK, @cb.learn_text(0, Alice_frag)
+    assert_equal CRM114::Error::OK, @cb.learn_text("a", Hound_frag)
+    assert_equal CRM114::Error::OK, @cb.learn_text(:b, Macbeth_frag)
     result = @cb.classify_text(Willows_frag)
 
     assert_equal CRM114::Result, result.class
+    assert_equal CRM114::Error::OK, result.error
     assert_equal :a, result.best_match
   end
 
@@ -80,6 +81,7 @@ class CRM114Test < Test::Unit::TestCase
     @cb.learn_text(0, Alice_frag)
     @cb.learn_text("a", Hound_frag)
     @cb.learn_text(:b, Macbeth_frag)
+    
     result = @cb.classify_text(Willows_frag)
 
     dump = @cb.dump_memory
@@ -94,6 +96,7 @@ class CRM114Test < Test::Unit::TestCase
 
     result2 = cb2.classify_text(Willows_frag)
 
+    assert_equal result.error, result2.error
     assert_equal result.best_match, result2.best_match
 
     # TODO

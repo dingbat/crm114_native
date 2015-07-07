@@ -57,6 +57,7 @@ static VALUE result_total_success_probability(VALUE obj);
 static VALUE result_overall_probability(VALUE obj);
 static VALUE result_best_match(VALUE obj);
 static VALUE result_text_features(VALUE obj);
+static VALUE result_get_error(VALUE obj);
 
 //(private)
 static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result);
@@ -123,6 +124,22 @@ void Init_crm114_native()
   rb_define_method(ResultClass, "overall_probability", result_overall_probability, 0);
   rb_define_method(ResultClass, "best_match", result_best_match, 0);
   rb_define_method(ResultClass, "text_features", result_text_features, 0);
+  rb_define_method(ResultClass, "error", result_get_error, 0);
+
+  //
+  // Errors
+  ////////
+
+  VALUE error_module = rb_define_module_under(crm114_module, "Error");
+  rb_define_const(error_module, "OK", INT2FIX(CRM114_OK));
+  rb_define_const(error_module, "UNK", INT2FIX(CRM114_UNK));
+  rb_define_const(error_module, "BADARG", INT2FIX(CRM114_BADARG));
+  rb_define_const(error_module, "NOMEM", INT2FIX(CRM114_NOMEM));
+  rb_define_const(error_module, "REGEX_ERR", INT2FIX(CRM114_REGEX_ERR));
+  rb_define_const(error_module, "FULL", INT2FIX(CRM114_FULL));
+  rb_define_const(error_module, "CLASS_FULL", INT2FIX(CRM114_CLASS_FULL));
+  rb_define_const(error_module, "OPEN_FAILED", INT2FIX(CRM114_OPEN_FAILED));
+  rb_define_const(error_module, "NOT_YET_IMPLEMENTED", INT2FIX(CRM114_NOT_YET_IMPLEMENTED));
 }
 
 ///////////////////////
@@ -221,9 +238,10 @@ VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text)
   char *text_str = RSTRING_PTR(text);
   int text_len = RSTRING_LEN(text);
 
-  crm114_learn_text(&(crm->db), idx, text_str, text_len);
+  CRM114_ERR err;
+  err = crm114_learn_text(&(crm->db), idx, text_str, text_len);
 
-  return Qnil;
+  return INT2FIX(err);
 }
 
 VALUE crm_classify_text(VALUE obj, VALUE text)
@@ -277,7 +295,8 @@ static void result_free(Result *res)
 
 static VALUE result_init(VALUE obj)
 {
-  Result *res = calloc(1, sizeof(Result)); //calloc so error starts as null
+  Result *res = malloc(sizeof(Result));
+  res->error = CRM114_OK;
   DATA_PTR(obj) = res;
   return Qnil;
 }
@@ -294,10 +313,16 @@ static void _result_set_error(VALUE obj, CRM114_ERR error)
   res->error = error;
 }
 
+static VALUE result_get_error(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  return INT2FIX(res->error);
+}
+
 static VALUE result_total_success_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
-  if (res->error) {
+  if (res->error != CRM114_OK) {
     return Qnil;
   }
   return DBL2NUM(res->result.tsprob);
@@ -306,7 +331,7 @@ static VALUE result_total_success_probability(VALUE obj)
 static VALUE result_overall_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
-  if (res->error) {
+  if (res->error != CRM114_OK) {
     return Qnil;
   }
   return DBL2NUM(res->result.overall_pR);
@@ -315,7 +340,7 @@ static VALUE result_overall_probability(VALUE obj)
 static VALUE result_best_match(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
-  if (res->error) {
+  if (res->error != CRM114_OK) {
     return Qnil;
   }
   char *class_name = res->result.class[res->result.bestmatch_index].name;
@@ -325,7 +350,7 @@ static VALUE result_best_match(VALUE obj)
 static VALUE result_text_features(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
-  if (res->error) {
+  if (res->error != CRM114_OK) {
     return Qnil;
   }
   return INT2FIX(res->result.unk_features);
