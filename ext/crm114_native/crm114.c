@@ -25,11 +25,11 @@ static void config_mark(Classifier *crm);
 static void config_free(Classifier *crm);
 
 static VALUE config_init(VALUE obj, VALUE classifier);
-static VALUE config_setClasses(VALUE obj, VALUE rb_classes_ary);
-static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size);
-static VALUE config_setRegex(VALUE obj, VALUE regex);
-static VALUE config_setPipeline(VALUE obj);
-static VALUE config_loadDB(VALUE obj, VALUE mem);
+static VALUE config_set_classes(VALUE obj, VALUE rb_classes_ary);
+static VALUE config_set_datablock_size(VALUE obj, VALUE rb_size);
+static VALUE config_set_regex(VALUE obj, VALUE regex);
+static VALUE config_set_pipeline(VALUE obj);
+static VALUE config_load_datablock(VALUE obj, VALUE mem);
 
 // CLASSIFIER
 
@@ -39,12 +39,12 @@ static void crm_free(Classifier *crm);
 
 static VALUE crm_init(VALUE obj, VALUE flags);
 static VALUE crm_config(VALUE obj);
-static VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text);
+static VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text);
 static VALUE crm_classify_text(VALUE obj, VALUE text);
-static VALUE crm_getClasses(VALUE obj);
-static VALUE crm_getDatablockSize(VALUE obj);
+static VALUE crm_get_classes(VALUE obj);
+static VALUE crm_get_datablock_size(VALUE obj);
 
-static VALUE crm_dumpMemory(VALUE obj);
+static VALUE crm_dump_memory(VALUE obj);
 
 //RESULT
 
@@ -77,14 +77,14 @@ void Init_crm114_native()
   rb_define_method(classifier_class, "initialize", crm_init, 1);
 
   // Virtual attrs
-  rb_define_method(classifier_class, "classes", crm_getClasses, 0);
-  rb_define_method(classifier_class, "datablock_size", crm_getDatablockSize, 0);
+  rb_define_method(classifier_class, "classes", crm_get_classes, 0);
+  rb_define_method(classifier_class, "datablock_size", crm_get_datablock_size, 0);
 
   // Methods
   rb_define_method(classifier_class, "config", crm_config, 0);
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
-  rb_define_method(classifier_class, "dump_memory", crm_dumpMemory, 0);
+  rb_define_method(classifier_class, "dump_memory", crm_dump_memory, 0);
 
   // Constants
   rb_define_const(classifier_class, "OSB", LONG2NUM(CRM114_OSB));
@@ -103,11 +103,11 @@ void Init_crm114_native()
   ConfigClass = rb_define_class_under(classifier_class, "Config", rb_cObject);
   rb_define_alloc_func(ConfigClass, config_alloc);
   rb_define_method(ConfigClass, "initialize", config_init, 1);
-  rb_define_method(ConfigClass, "classes=", config_setClasses, 1);
-  rb_define_method(ConfigClass, "datablock_size=", config_setDatablockSize, 1);
-  rb_define_method(ConfigClass, "regex=", config_setRegex, 1);
-  rb_define_method(ConfigClass, "pipeline=", config_setPipeline, 0); //TODO
-  rb_define_method(ConfigClass, "load_datablock", config_loadDB, 1);
+  rb_define_method(ConfigClass, "classes=", config_set_classes, 1);
+  rb_define_method(ConfigClass, "datablock_size=", config_set_datablock_size, 1);
+  rb_define_method(ConfigClass, "regex=", config_set_regex, 1);
+  rb_define_method(ConfigClass, "pipeline=", config_set_pipeline, 0); //TODO
+  rb_define_method(ConfigClass, "load_datablock", config_load_datablock, 1);
 
   //
   // Result
@@ -172,14 +172,12 @@ static VALUE crm_config(VALUE obj)
   return Qnil;
 }
 
-static VALUE crm_getClasses(VALUE obj)
+static VALUE crm_get_classes(VALUE obj)
 {
-  VALUE hash;
-  int length;
   Classifier *crm = DATA_PTR(obj);
 
-  length = crm->cb->how_many_classes;
-  hash = rb_hash_new();
+  int length = crm->cb->how_many_classes;
+  VALUE hash = rb_hash_new();
   int i;
   for (i = 0; i < length; i++) {
     rb_hash_aset(hash, ID2SYM(rb_intern(crm->cb->class[i].name)), INT2FIX(crm->cb->class[i].success));
@@ -188,41 +186,38 @@ static VALUE crm_getClasses(VALUE obj)
   return hash;
 }
 
-static VALUE crm_getDatablockSize(VALUE obj)
+static VALUE crm_get_datablock_size(VALUE obj)
 {
   Classifier *crm = DATA_PTR(obj);
   return LONG2NUM(crm->cb->datablock_size);
 }
 
-VALUE crm_learn_text(VALUE obj, VALUE whichClass, VALUE text)
+VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text)
 {
-  int idx;
-  int length;
   Classifier *crm = DATA_PTR(obj);
 
-  char *text_str;
-  int text_len;
+  int idx;
 
-  if (TYPE(whichClass) == T_STRING || TYPE(whichClass) == T_SYMBOL) {
+  if (TYPE(the_class) == T_STRING || TYPE(the_class) == T_SYMBOL) {
     const char *string;
-    if (TYPE(whichClass) == T_SYMBOL) {
-      string = rb_id2name(SYM2ID(whichClass));
+    if (TYPE(the_class) == T_SYMBOL) {
+      string = rb_id2name(SYM2ID(the_class));
     } else {
-      string = RSTRING_PTR(whichClass);
+      string = RSTRING_PTR(the_class);
     }
     //get the index of the string
-    length = crm->cb->how_many_classes;
+    int length = crm->cb->how_many_classes;
     for (idx = 0; idx < length; idx++) {
       if (strcmp(crm->cb->class[idx].name, string) == 0) {
         break;
       }
     }
   } else {
-    idx = FIX2INT(whichClass);
+    idx = FIX2INT(the_class);
   }
 
-  text_str = RSTRING_PTR(text);
-  text_len = RSTRING_LEN(text);
+  char *text_str = RSTRING_PTR(text);
+  int text_len = RSTRING_LEN(text);
 
   crm114_learn_text(&(crm->db), idx, text_str, text_len);
 
@@ -236,20 +231,18 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
   char *text_str = RSTRING_PTR(text);
   int text_len = RSTRING_LEN(text);
 
-  VALUE rb_result;
-
   CRM114_MATCHRESULT result;
   crm->err = crm114_classify_text(crm->db, text_str, text_len, &result);
   if (crm->err) {
     return Qnil;
   } else {
-    rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
+    VALUE rb_result = rb_funcall(ResultClass, rb_intern("new"), 0);
     _result_set(rb_result, result);
     return rb_result;
   }
 }
 
-VALUE crm_dumpMemory(VALUE obj)
+VALUE crm_dump_memory(VALUE obj)
 {
   Classifier *classifier = DATA_PTR(obj);
 
@@ -337,7 +330,7 @@ static VALUE config_init(VALUE obj, VALUE classifier)
   return Qnil;
 }
 
-static VALUE config_loadDB(VALUE obj, VALUE mem)
+static VALUE config_load_datablock(VALUE obj, VALUE mem)
 {
   Classifier *classifier = DATA_PTR(obj);
 
@@ -350,7 +343,6 @@ static VALUE config_loadDB(VALUE obj, VALUE mem)
 int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
 {
   Classifier *classifier = DATA_PTR(obj);
-  int i;
 
   const char *name;
   if (TYPE(key) == T_STRING) {
@@ -359,7 +351,7 @@ int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
     name = rb_id2name(SYM2ID(key));
   }
 
-  i = classifier->cb->how_many_classes;
+  int i = classifier->cb->how_many_classes;
   strcpy(classifier->cb->class[i].name, name);
   classifier->cb->class[i].success = FIX2INT(val);
   classifier->cb->how_many_classes++;
@@ -367,20 +359,15 @@ int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
   return ST_CONTINUE;
 }
 
-static VALUE config_setClasses(VALUE obj, VALUE rb_classes)
+static VALUE config_set_classes(VALUE obj, VALUE rb_classes)
 {
-  int i;
-  int length;
-  char *name;
-  Classifier *classifier;
-
-  classifier = DATA_PTR(obj);
+  Classifier *classifier = DATA_PTR(obj);
 
   if (TYPE(rb_classes) == T_ARRAY) {
-    length = RARRAY_LEN(rb_classes);
+    int length = RARRAY_LEN(rb_classes);
     classifier->cb->how_many_classes = length;
-    for (i = 0; i < length; i++) {
-      name = RSTRING_PTR(rb_ary_entry(rb_classes, i));
+    for (int i = 0; i < length; i++) {
+      char *name = RSTRING_PTR(rb_ary_entry(rb_classes, i));
       strcpy(classifier->cb->class[i].name, name);
     }
   }
@@ -392,14 +379,14 @@ static VALUE config_setClasses(VALUE obj, VALUE rb_classes)
   return rb_classes;
 }
 
-static VALUE config_setDatablockSize(VALUE obj, VALUE rb_size)
+static VALUE config_set_datablock_size(VALUE obj, VALUE rb_size)
 {
   Classifier *classifier = DATA_PTR(obj);
   classifier->cb->datablock_size = NUM2LONG(rb_size);
   return rb_size;
 }
 
-static VALUE config_setRegex(VALUE obj, VALUE regex)
+static VALUE config_set_regex(VALUE obj, VALUE regex)
 {
   Classifier *classifier = DATA_PTR(obj);
   
@@ -410,7 +397,7 @@ static VALUE config_setRegex(VALUE obj, VALUE regex)
   return regex;
 }
 
-static VALUE config_setPipeline(VALUE obj)
+static VALUE config_set_pipeline(VALUE obj)
 {
   //TODO
 
