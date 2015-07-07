@@ -52,7 +52,6 @@ static VALUE result_alloc(VALUE klass);
 static void result_mark(Result *crm);
 static void result_free(Result *crm);
 
-static VALUE result_init(VALUE obj);
 static VALUE result_total_success_probability(VALUE obj);
 static VALUE result_overall_probability(VALUE obj);
 static VALUE result_best_match(VALUE obj);
@@ -118,7 +117,6 @@ void Init_crm114_native()
 
   ResultClass = rb_define_class_under(crm114_module, "Result", rb_cObject);
   rb_define_alloc_func(ResultClass, result_alloc);
-  rb_define_method(ResultClass, "initialize", result_init, 0);
 
   rb_define_method(ResultClass, "total_success_probability", result_total_success_probability, 0);
   rb_define_method(ResultClass, "overall_probability", result_overall_probability, 0);
@@ -281,7 +279,11 @@ VALUE crm_dump_memory(VALUE obj)
 
 static VALUE result_alloc(VALUE klass)
 {
-  return Data_Wrap_Struct(klass, result_mark, result_free, NULL);
+  VALUE obj = Data_Wrap_Struct(klass, result_mark, result_free, NULL);
+  Result *res = malloc(sizeof(Result));
+  res->error = CRM114_OK;
+  DATA_PTR(obj) = res;
+  return obj;
 }
 
 static void result_mark(Result *res)
@@ -291,14 +293,6 @@ static void result_mark(Result *res)
 static void result_free(Result *res)
 {
   free(res);
-}
-
-static VALUE result_init(VALUE obj)
-{
-  Result *res = malloc(sizeof(Result));
-  res->error = CRM114_OK;
-  DATA_PTR(obj) = res;
-  return Qnil;
 }
 
 static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result)
