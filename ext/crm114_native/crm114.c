@@ -129,7 +129,6 @@ void Init_crm114_native()
   ////////
 
   VALUE error_module = rb_define_module_under(crm114_module, "Error");
-  rb_define_const(error_module, "OK", INT2FIX(CRM114_OK));
   rb_define_const(error_module, "UNK", INT2FIX(CRM114_UNK));
   rb_define_const(error_module, "BADARG", INT2FIX(CRM114_BADARG));
   rb_define_const(error_module, "NOMEM", INT2FIX(CRM114_NOMEM));
@@ -238,8 +237,11 @@ VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text)
 
   CRM114_ERR err;
   err = crm114_learn_text(&(crm->db), idx, text_str, text_len);
-
-  return INT2FIX(err);
+  if (err == CRM114_OK) {
+    return Qnil;
+  } else {
+    return INT2FIX(err);
+  }
 }
 
 VALUE crm_classify_text(VALUE obj, VALUE text)
@@ -310,6 +312,9 @@ static void _result_set_error(VALUE obj, CRM114_ERR error)
 static VALUE result_get_error(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
+  if (res->error == CRM114_OK) {
+    return Qnil;
+  }
   return INT2FIX(res->error);
 }
 
