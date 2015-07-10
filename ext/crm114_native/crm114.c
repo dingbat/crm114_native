@@ -29,7 +29,7 @@ static VALUE config_set_classes(VALUE obj, VALUE rb_classes_ary);
 static VALUE config_set_datablock_size(VALUE obj, VALUE rb_size);
 static VALUE config_set_regex(VALUE obj, VALUE regex);
 static VALUE config_set_pipeline(VALUE obj);
-static VALUE config_load_datablock(VALUE obj, VALUE mem);
+static VALUE config_load_datablock_memory(VALUE obj, VALUE mem);
 
 // CLASSIFIER
 
@@ -44,7 +44,7 @@ static VALUE crm_classify_text(VALUE obj, VALUE text);
 static VALUE crm_get_classes(VALUE obj);
 static VALUE crm_get_datablock_size(VALUE obj);
 
-static VALUE crm_dump_memory(VALUE obj);
+static VALUE crm_datablock_memory(VALUE obj);
 
 //RESULT
 
@@ -86,7 +86,7 @@ void Init_crm114_native()
   rb_define_method(classifier_class, "config", crm_config, 0);
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
-  rb_define_method(classifier_class, "dump_memory", crm_dump_memory, 0);
+  rb_define_method(classifier_class, "datablock_memory", crm_datablock_memory, 0);
 
   // Constants
   rb_define_const(classifier_class, "OSB", LONG2NUM(CRM114_OSB));
@@ -109,7 +109,7 @@ void Init_crm114_native()
   rb_define_method(ConfigClass, "datablock_size=", config_set_datablock_size, 1);
   rb_define_method(ConfigClass, "regex=", config_set_regex, 1);
   rb_define_method(ConfigClass, "pipeline=", config_set_pipeline, 0); //TODO
-  rb_define_method(ConfigClass, "load_datablock", config_load_datablock, 1);
+  rb_define_method(ConfigClass, "load_datablock_memory", config_load_datablock_memory, 1);
 
   //
   // Result
@@ -267,7 +267,7 @@ VALUE crm_classify_text(VALUE obj, VALUE text)
   return rb_result;
 }
 
-VALUE crm_dump_memory(VALUE obj)
+VALUE crm_datablock_memory(VALUE obj)
 {
   Classifier *classifier = DATA_PTR(obj);
 
@@ -380,7 +380,7 @@ static VALUE config_init(VALUE obj, VALUE classifier)
   return Qnil;
 }
 
-static VALUE config_load_datablock(VALUE obj, VALUE mem)
+static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 {
   Classifier *classifier = DATA_PTR(obj);
 

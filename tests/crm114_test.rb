@@ -57,7 +57,7 @@ class CRM114Test < Test::Unit::TestCase
     @cb.learn_text(:hamlet, HAMLET2)
     @cb.learn_text(:hamlet, HAMLET3)    
     
-    dump = @cb.dump_memory
+    dump = @cb.datablock_memory
 
     result = @cb.classify_text(ALICE4)
 
@@ -66,7 +66,7 @@ class CRM114Test < Test::Unit::TestCase
     cb2.config do |config|
       config.datablock_size = 8000000
       config.classes = ["alice","hamlet"]
-      config.load_datablock(dump)
+      config.load_datablock_memory(dump)
     end
 
     result2 = cb2.classify_text(ALICE4)

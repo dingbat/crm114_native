@@ -6,13 +6,12 @@ a ruby gem for the [crm114 discriminator](https://en.wikipedia.org/wiki/CRM114_(
 
 gemfile:
 
-```
+```ruby
 gem 'crm114_native', git: "https://github.com/dingbat/crm114_native"
 ```
 
 manually (it's not on rubygems yet):
 ```
-$ rake compile
 $ gem build crm114_native.gemspec
 $ gem install crm114_native-1.0.gem
 ```
@@ -41,15 +40,18 @@ result.overall_probability  #=> 0.84
 ##### serializing & deserializing:
 
 ```ruby
-dump = classifier.dump_memory  #=> machine-specific(!) binary as string
+dump = classifier.datablock_memory  #=> machine-specific(!) binary as string
 
-flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
-classifier_clone = CRM114::Classifier.new(flags)
+classifier_clone = CRM114::Classifier.new(classifier.flags)
 classifier_clone.config do |config|
-  config.datablock_size = 8000000
-  config.classes = [:alice, :hamlet]
-  config.load_datablock(dump)
+  config.datablock_size = classifier.datablock_size
+  config.classes = classifier.classes
+  config.load_datablock_memory(dump)
 end
+
+a = classifier.classify_text(FOO).best_match
+b = classifier_clone.classify_text(FOO).best_match
+a == b #=> true
 ```
 
 ##### possible classifier flags (for now):
