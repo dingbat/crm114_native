@@ -172,8 +172,6 @@ static VALUE crm_init(VALUE obj, VALUE flags)
   crm114_cb_setflags(crm->cb, NUM2LONG(flags));
   crm114_cb_setclassdefaults(crm->cb);
 
-  rb_iv_set(obj, "@flags", flags);
-
   return Qnil;
 }
 
@@ -214,7 +212,8 @@ static VALUE crm_get_datablock_size(VALUE obj)
 
 static VALUE crm_get_flags(VALUE obj)
 {
-  return rb_iv_get(obj, "@flags");
+  Classifier *crm = DATA_PTR(obj);
+  return LONG2NUM(crm->cb->classifier_flags);
 }
 
 VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text)
