@@ -5,8 +5,8 @@ require_relative './lit_frags'
 
 class CRM114Test < Test::Unit::TestCase
   def setup
-    flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
-    @cb = CRM114::Classifier.new(flags)
+    @flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
+    @cb = CRM114::Classifier.new(@flags)
     @cb.config do |config|
       config.datablock_size = 8000000
       config.classes = ["alice","hamlet"]
@@ -14,6 +14,8 @@ class CRM114Test < Test::Unit::TestCase
   end
 
   def test_config
+    assert_equal @flags, @cb.flags
+
     classes = {a:1,b:0}
 
     @cb.config do |config|
@@ -61,11 +63,10 @@ class CRM114Test < Test::Unit::TestCase
 
     result = @cb.classify_text(ALICE4)
 
-    flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
-    cb2 = CRM114::Classifier.new(flags)
+    cb2 = CRM114::Classifier.new(@cb.flags)
     cb2.config do |config|
-      config.datablock_size = 8000000
-      config.classes = ["alice","hamlet"]
+      config.datablock_size = @cb.datablock_size
+      config.classes = @cb.classes
       config.load_datablock_memory(dump)
     end
 
