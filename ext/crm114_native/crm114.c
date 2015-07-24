@@ -54,10 +54,11 @@ static void result_mark(Result *crm);
 static void result_free(Result *crm);
 
 static VALUE result_total_success_probability(VALUE obj);
-static VALUE result_overall_probability(VALUE obj);
+static VALUE result_overall_pR(VALUE obj);
 static VALUE result_best_match(VALUE obj);
 static VALUE result_text_features(VALUE obj);
 static VALUE result_get_error(VALUE obj);
+static VALUE result_get_class(VALUE obj, VALUE key);
 
 //(private)
 static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result);
@@ -66,6 +67,7 @@ static void _result_set_error(VALUE obj, CRM114_ERR error);
 // Global classes for static access
 static VALUE ConfigClass;
 static VALUE ResultClass;
+static VALUE ClassResultStruct;
 
 void Init_crm114_native()
 {
@@ -121,10 +123,13 @@ void Init_crm114_native()
   rb_define_alloc_func(ResultClass, result_alloc);
 
   rb_define_method(ResultClass, "total_success_probability", result_total_success_probability, 0);
-  rb_define_method(ResultClass, "overall_probability", result_overall_probability, 0);
+  rb_define_method(ResultClass, "overall_pR", result_overall_pR, 0);
   rb_define_method(ResultClass, "best_match", result_best_match, 0);
   rb_define_method(ResultClass, "text_features", result_text_features, 0);
   rb_define_method(ResultClass, "error", result_get_error, 0);
+  rb_define_method(ResultClass, "[]", result_get_class, 1);
+
+  ClassResultStruct = rb_eval_string_protect("Struct.new('ClassificationResult', :pR, :probability, :documents, :features, :hits)", 0);
 
   //
   // Errors
@@ -139,6 +144,29 @@ void Init_crm114_native()
   rb_define_const(error_module, "CLASS_FULL", INT2FIX(CRM114_CLASS_FULL));
   rb_define_const(error_module, "OPEN_FAILED", INT2FIX(CRM114_OPEN_FAILED));
   rb_define_const(error_module, "NOT_YET_IMPLEMENTED", INT2FIX(CRM114_NOT_YET_IMPLEMENTED));
+}
+
+int index_of_class(VALUE the_class, int how_many_classes, CRM114_CONTROLBLOCK *cb, CRM114_MATCHRESULT *result)
+{
+  if (TYPE(the_class) == T_STRING || TYPE(the_class) == T_SYMBOL) {
+    const char *string;
+    if (TYPE(the_class) == T_SYMBOL) {
+      string = rb_id2name(SYM2ID(the_class));
+    } else {
+      string = RSTRING_PTR(the_class);
+    }
+    //get the index of the string
+    for (int idx = 0; idx < how_many_classes; idx++) {
+      if ((cb && strcmp(cb->class[idx].name, string) == 0) ||
+          (result && strcmp(result->class[idx].name, string) == 0)) {
+        return idx;
+      }
+    }
+
+    return -1;
+  } else {
+    return FIX2INT(the_class);
+  }
 }
 
 ///////////////////////
@@ -220,25 +248,7 @@ VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text)
 {
   Classifier *crm = DATA_PTR(obj);
 
-  int idx;
-
-  if (TYPE(the_class) == T_STRING || TYPE(the_class) == T_SYMBOL) {
-    const char *string;
-    if (TYPE(the_class) == T_SYMBOL) {
-      string = rb_id2name(SYM2ID(the_class));
-    } else {
-      string = RSTRING_PTR(the_class);
-    }
-    //get the index of the string
-    int length = crm->cb->how_many_classes;
-    for (idx = 0; idx < length; idx++) {
-      if (strcmp(crm->cb->class[idx].name, string) == 0) {
-        break;
-      }
-    }
-  } else {
-    idx = FIX2INT(the_class);
-  }
+  int idx = index_of_class(the_class, crm->cb->how_many_classes, crm->cb, NULL);
 
   char *text_str = RSTRING_PTR(text);
   int text_len = RSTRING_LEN(text);
@@ -326,6 +336,23 @@ static VALUE result_get_error(VALUE obj)
   return INT2FIX(res->error);
 }
 
+static VALUE result_get_class(VALUE obj, VALUE key)
+{
+  Result *res = DATA_PTR(obj);
+  if (res->error != CRM114_OK) {
+    return Qnil;
+  }
+
+  int idx = index_of_class(key, res->result.how_many_classes, NULL, &(res->result));
+
+  return rb_funcall(ClassResultStruct, rb_intern("new"), 5, 
+    DBL2NUM(res->result.class[idx].pR),
+    DBL2NUM(res->result.class[idx].prob),
+    INT2FIX(res->result.class[idx].documents),
+    INT2FIX(res->result.class[idx].features),
+    INT2FIX(res->result.class[idx].hits));
+}
+
 static VALUE result_total_success_probability(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
@@ -335,7 +362,7 @@ static VALUE result_total_success_probability(VALUE obj)
   return DBL2NUM(res->result.tsprob);
 }
 
-static VALUE result_overall_probability(VALUE obj)
+static VALUE result_overall_pR(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
   if (res->error != CRM114_OK) {

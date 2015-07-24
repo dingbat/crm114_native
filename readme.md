@@ -1,6 +1,6 @@
 # crm114_native
 
-a ruby gem for the [crm114 discriminator](https://en.wikipedia.org/wiki/CRM114_(program)) that uses native C bindings to the [libcrm114](http://crm114.sourceforge.net/wiki/doku.php?id=download) library.
+a ruby gem for the [crm114 discriminator](https://en.wikipedia.org/wiki/CRM114_(program)) that uses native bindings to the [libcrm114](http://crm114.sourceforge.net/wiki/doku.php?id=download) C-callable library
 
 ## installing
 
@@ -32,9 +32,12 @@ classifier.learn_text :hamlet, HAMLET_TEXT   #=> nil (or error)
 classifier.learn_text :alice, ALICE_TEXT
 
 result = classifier.classify_text MYSTERY_TEXT  #=> CRM114::Result
-result.best_match           #=> :alice
-result.error                #=> nil
-result.overall_probability  #=> 0.84
+result.best_match            #=> :alice
+result.error                 #=> nil
+result.overall_pR            #=> 0.8801322188516771
+
+result[:alice].probability   #=> 0.628685148728209
+result[:hamlet].probability  #=> 0.371314851271791
 ```
 
 ##### serializing & deserializing:

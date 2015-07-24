@@ -80,4 +80,25 @@ class CRM114Test < Test::Unit::TestCase
     # slight differences in the lengths of the binaries (i think bc)
     # when we malloc it pads or something, etc
   end
+
+  def test_result_classes
+    @cb.learn_text(:alice, ALICE1)
+    @cb.learn_text(:alice, ALICE2)
+    @cb.learn_text(:hamlet, HAMLET1)
+    @cb.learn_text(:hamlet, HAMLET2)
+    @cb.learn_text(:hamlet, HAMLET3)
+
+    result = @cb.classify_text(ALICE3)
+
+    assert_nil result.error
+    assert_not_nil result[:alice]
+    assert_not_nil result[:alice].pR
+    assert_not_nil result[:alice].probability
+    assert_not_nil result[:alice].documents
+    assert_not_nil result[:alice].features
+    assert_not_nil result[:alice].hits
+    assert_not_nil result[:hamlet]
+    
+    assert result[:alice].probability > result[:hamlet].probability, "Alice should have greater confidence than hamlet"
+  end
 end
