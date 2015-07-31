@@ -44,6 +44,7 @@ class CRM114Test < Test::Unit::TestCase
     assert_nil @cb.learn_text(:hamlet, HAMLET1)
     assert_nil @cb.learn_text(:hamlet, HAMLET2)
     assert_nil @cb.learn_text(:hamlet, HAMLET3)
+
     result = @cb.classify_text(ALICE4)
 
     assert_equal CRM114::Result, result.class
@@ -52,16 +53,16 @@ class CRM114Test < Test::Unit::TestCase
   end
 
   def test_serialize
-    @cb.learn_text(0, ALICE1)
-    @cb.learn_text("alice", ALICE2)
-    @cb.learn_text("alice", ALICE3)
+    @cb.learn_text(:alice, ALICE1)
+    @cb.learn_text(:alice, ALICE2)
+    @cb.learn_text(:alice, ALICE3)
     @cb.learn_text(:hamlet, HAMLET1)
     @cb.learn_text(:hamlet, HAMLET2)
     @cb.learn_text(:hamlet, HAMLET3)    
     
     dump = @cb.datablock_memory
 
-    result = @cb.classify_text(ALICE4)
+    result = @cb.classify_text(HAMLET4)
 
     cb2 = CRM114::Classifier.new(@cb.flags)
     cb2.config do |config|
@@ -70,15 +71,17 @@ class CRM114Test < Test::Unit::TestCase
       config.load_datablock_memory(dump)
     end
 
-    result2 = cb2.classify_text(ALICE4)
+    dump2 = cb2.datablock_memory
+
+    assert_equal dump.length, dump2.length
+    assert_equal dump, dump2
+
+    result2 = cb2.classify_text(HAMLET4)
 
     assert_equal result.error, result2.error
     assert_equal result.best_match, result2.best_match
-
-    # TODO
-    # would be nice to compare the dumps of both, but we're getting
-    # slight differences in the lengths of the binaries (i think bc)
-    # when we malloc it pads or something, etc
+    assert_equal result[:hamlet], result2[:hamlet]
+    assert_equal result[:alice], result2[:alice]
   end
 
   def test_result_classes

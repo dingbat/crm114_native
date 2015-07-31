@@ -423,8 +423,8 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
   Classifier *classifier = DATA_PTR(obj);
 
   classifier->db = crm114_new_db(classifier->cb);
-  strcpy((char*)(classifier->db), RSTRING_PTR(mem));
-
+  memcpy((char*)(classifier->db), RSTRING_PTR(mem), classifier->cb->datablock_size);
+  
   return Qnil;
 }
 
