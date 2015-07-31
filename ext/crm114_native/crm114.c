@@ -216,8 +216,8 @@ static VALUE crm_config(VALUE obj)
   rb_yield(new_config);
 
   if (crm->db == NULL) {
-    crm->db = crm114_new_db(crm->cb);
     crm114_cb_setblockdefaults(crm->cb);
+    crm->db = crm114_new_db(crm->cb);
   }
 
   return Qnil;
