@@ -226,6 +226,7 @@ static VALUE crm_config(VALUE obj)
 static VALUE crm_config_without_db_defaults(VALUE obj)
 {
   Classifier *crm = DATA_PTR(obj);
+  crm114_cb_setblockdefaults(crm->cb);
 
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
@@ -438,7 +439,7 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 {
   Classifier *classifier = DATA_PTR(obj);
 
-  classifier->db = crm114_new_db(classifier->cb);
+  classifier->db = malloc(classifier->cb->datablock_size);
   memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
 
   return Qnil;
