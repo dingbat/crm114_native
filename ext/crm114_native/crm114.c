@@ -18,6 +18,9 @@ typedef struct Result
   CRM114_ERR error;
 } Result;
 
+#define BOOL2INT(x)  (((x) == Qtrue)?1:0)
+#define INT2BOOL(x)  ((x)?Qtrue:Qfalse)
+
 // CONFIG
 
 static VALUE config_alloc(VALUE klass);
@@ -226,7 +229,7 @@ static VALUE crm_get_classes(VALUE obj)
   VALUE hash = rb_hash_new();
   int i;
   for (i = 0; i < length; i++) {
-    rb_hash_aset(hash, ID2SYM(rb_intern(crm->cb->class[i].name)), INT2FIX(crm->cb->class[i].success));
+    rb_hash_aset(hash, ID2SYM(rb_intern(crm->cb->class[i].name)), INT2BOOL(crm->cb->class[i].success));
   }
 
   return hash;
@@ -438,7 +441,7 @@ int classes_hash_foreach(VALUE key, VALUE val, VALUE obj)
 
   int i = classifier->cb->how_many_classes;
   strcpy(classifier->cb->class[i].name, name);
-  classifier->cb->class[i].success = FIX2INT(val);
+  classifier->cb->class[i].success = BOOL2INT(val);
   classifier->cb->how_many_classes++;
 
   return ST_CONTINUE;

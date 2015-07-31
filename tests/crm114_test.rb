@@ -16,7 +16,7 @@ class CRM114Test < Test::Unit::TestCase
   def test_config
     assert_equal @flags, @cb.flags
 
-    classes = {a:1,b:0}
+    classes = {a:true,b:false}
 
     @cb.config do |config|
       config.datablock_size = 128504
@@ -27,7 +27,7 @@ class CRM114Test < Test::Unit::TestCase
     assert_equal classes, @cb.classes
 
     @cb.config do |config|
-      config.classes = {"a" => 1, "b" => 0}
+      config.classes = {"a" => true, "b" => false}
     end
     assert_equal classes, @cb.classes
 
@@ -91,10 +91,11 @@ class CRM114Test < Test::Unit::TestCase
     result = @cb.classify_text(ALICE3)
 
     assert_nil result.error
+    assert_equal result[:alice].documents, 2
+    assert_equal result[:hamlet].documents, 3
     assert_not_nil result[:alice]
     assert_not_nil result[:alice].pR
     assert_not_nil result[:alice].probability
-    assert_not_nil result[:alice].documents
     assert_not_nil result[:alice].features
     assert_not_nil result[:alice].hits
     assert_not_nil result[:hamlet]
