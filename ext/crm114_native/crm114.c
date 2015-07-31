@@ -42,6 +42,7 @@ static void crm_free(Classifier *crm);
 
 static VALUE crm_init(VALUE obj, VALUE flags);
 static VALUE crm_config(VALUE obj);
+static VALUE crm_config_without_db_defaults(VALUE obj);
 static VALUE crm_learn_text(VALUE obj, VALUE the_class, VALUE text);
 static VALUE crm_classify_text(VALUE obj, VALUE text);
 static VALUE crm_get_classes(VALUE obj);
@@ -91,6 +92,7 @@ void Init_crm114_native()
 
   // Methods
   rb_define_method(classifier_class, "config", crm_config, 0);
+  rb_define_method(classifier_class, "config_without_db_defaults", crm_config_without_db_defaults, 0);
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
   rb_define_method(classifier_class, "datablock_memory", crm_datablock_memory, 0);
@@ -214,6 +216,20 @@ static VALUE crm_config(VALUE obj)
   rb_yield(new_config);
 
   crm114_cb_setblockdefaults(crm->cb);
+  if (crm->db == NULL) {
+    crm->db = crm114_new_db(crm->cb);
+  }
+
+  return Qnil;
+}
+
+static VALUE crm_config_without_db_defaults(VALUE obj)
+{
+  Classifier *crm = DATA_PTR(obj);
+
+  VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
+  rb_yield(new_config);
+
   if (crm->db == NULL) {
     crm->db = crm114_new_db(crm->cb);
   }
@@ -423,8 +439,8 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
   Classifier *classifier = DATA_PTR(obj);
 
   classifier->db = crm114_new_db(classifier->cb);
-  memcpy((char*)(classifier->db), RSTRING_PTR(mem), classifier->cb->datablock_size);
-  
+  memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
+
   return Qnil;
 }
 

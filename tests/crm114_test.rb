@@ -35,6 +35,12 @@ class CRM114Test < Test::Unit::TestCase
       config.classes = classes
     end
     assert_equal classes, @cb.classes
+
+    @cb.config_without_db_defaults do |config|
+      config.classes = classes
+      config.datablock_size = 80000
+    end
+    assert_equal 80000, @cb.datablock_size
   end
 
   def test_classify
@@ -56,13 +62,16 @@ class CRM114Test < Test::Unit::TestCase
     @cb.learn_text(:alice, ALICE1)
     @cb.learn_text(:alice, ALICE2)
     @cb.learn_text(:alice, ALICE3)
+    @cb.learn_text(:alice, ALICE4)
+    @cb.learn_text(:alice, ALICE5)
     @cb.learn_text(:hamlet, HAMLET1)
     @cb.learn_text(:hamlet, HAMLET2)
     @cb.learn_text(:hamlet, HAMLET3)    
+    @cb.learn_text(:hamlet, HAMLET4)    
     
     dump = @cb.datablock_memory
 
-    result = @cb.classify_text(HAMLET4)
+    result = @cb.classify_text(HAMLET5)
 
     cb2 = CRM114::Classifier.new(@cb.flags)
     cb2.config do |config|
@@ -76,7 +85,7 @@ class CRM114Test < Test::Unit::TestCase
     assert_equal dump.length, dump2.length
     assert_equal dump, dump2
 
-    result2 = cb2.classify_text(HAMLET4)
+    result2 = cb2.classify_text(HAMLET5)
 
     assert_equal result.error, result2.error
     assert_equal result.best_match, result2.best_match
