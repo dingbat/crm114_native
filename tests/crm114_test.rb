@@ -8,7 +8,7 @@ class CRM114Test < Test::Unit::TestCase
     @flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
     @cb = CRM114::Classifier.new(@flags)
     @cb.config do |config|
-      config.datablock_size = 8000000
+      config.datablock_size = 20000
       config.classes = ["alice","hamlet"]
     end
   end
@@ -91,6 +91,27 @@ class CRM114Test < Test::Unit::TestCase
     assert_equal result.best_match, result2.best_match
     assert_equal result[:hamlet], result2[:hamlet]
     assert_equal result[:alice], result2[:alice]
+
+    # try serializing again (the clone)
+
+    cb3 = CRM114::Classifier.new(cb2.flags)
+    cb3.config do |config|
+      config.datablock_size = cb2.datablock_size
+      config.classes = cb2.classes
+      config.load_datablock_memory(dump2)
+    end
+
+    dump3 = cb3.datablock_memory
+
+    assert_equal dump2.length, dump3.length
+    assert_equal dump2, dump3
+
+    result3 = cb3.classify_text(HAMLET5)
+
+    assert_equal result2.error, result3.error
+    assert_equal result2.best_match, result3.best_match
+    assert_equal result2[:hamlet], result3[:hamlet]
+    assert_equal result2[:alice], result3[:alice]
   end
 
   def test_result_classes

@@ -10,6 +10,7 @@ typedef struct Classifier
 {
   CRM114_CONTROLBLOCK *cb;
   CRM114_DATABLOCK *db;
+  int preloaded_db;
 } Classifier;
 
 typedef struct Result
@@ -198,7 +199,7 @@ static VALUE crm_init(VALUE obj, VALUE flags)
 {
   Classifier *crm = malloc(sizeof(Classifier));
   crm->cb = crm114_new_cb();
-  crm->db = NULL;
+  crm->preloaded_db = 0;
 
   DATA_PTR(obj) = crm;
 
@@ -215,7 +216,7 @@ static VALUE crm_config(VALUE obj)
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
 
-  if (crm->db == NULL) {
+  if (crm->preloaded_db == 0) {
     crm114_cb_setblockdefaults(crm->cb);
     crm->db = crm114_new_db(crm->cb);
   }
@@ -231,7 +232,7 @@ static VALUE crm_config_without_db_defaults(VALUE obj)
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
 
-  if (crm->db == NULL) {
+  if (crm->preloaded_db == 0) {
     crm->db = crm114_new_db(crm->cb);
   }
 
@@ -441,6 +442,7 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 
   classifier->db = malloc(classifier->cb->datablock_size);
   memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
+  classifier->preloaded_db = 1;
 
   return Qnil;
 }
