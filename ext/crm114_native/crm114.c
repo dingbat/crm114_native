@@ -59,6 +59,7 @@ static VALUE crm_get_datablock_size(VALUE obj);
 static VALUE crm_get_flags(VALUE obj);
 
 static VALUE crm_datablock_memory(VALUE obj);
+static VALUE crm_controlblock_memory(VALUE obj);
 
 //RESULT
 
@@ -112,6 +113,7 @@ void Init_crm114_native()
   rb_define_method(classifier_class, "learn_text", crm_learn_text, 2);
   rb_define_method(classifier_class, "classify_text", crm_classify_text, 1);
   rb_define_method(classifier_class, "datablock_memory", crm_datablock_memory, 0);
+  rb_define_method(classifier_class, "controlblock_memory", crm_controlblock_memory, 0);
 
   // Constants
   rb_define_const(classifier_class, "OSB", LONG2NUM(CRM114_OSB));
@@ -376,6 +378,14 @@ VALUE crm_datablock_memory(VALUE obj)
   Classifier *classifier = DATA_PTR(obj);
 
   VALUE rb_str = rb_str_new((char *)(classifier->db), classifier->cb->datablock_size);
+  return rb_str;
+}
+
+VALUE crm_controlblock_memory(VALUE obj)
+{
+  Classifier *classifier = DATA_PTR(obj);
+
+  VALUE rb_str = rb_str_new((char *)(classifier->cb), sizeof(*classifier->cb));
   return rb_str;
 }
 
