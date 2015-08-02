@@ -25,12 +25,15 @@ class CRM114Test < Test::Unit::TestCase
       config.classes = ["a","b"]
     end
 
+    defaulted_size = @cb.datablock_size
+    
     assert_equal classes, @cb.classes
 
     @cb.config do |config|
       config.classes = {"a" => true, "b" => false}
     end
     assert_equal classes, @cb.classes
+    assert_equal defaulted_size, @cb.datablock_size
 
     @cb.config do |config|
       config.classes = classes
@@ -106,23 +109,23 @@ class CRM114Test < Test::Unit::TestCase
     # this time, try over a file
 
     File.open("dump2", "wb") do |file|
-      file.puts(cb2.datablock_memory)
+      file.write(cb2.datablock_memory)
+      file.flush
     end
-    dump2_f = File.open("dump2", "rb").read#.encode("binary")
+    dump2_f = File.open("dump2", "rb").read
     File.delete("dump2")
 
     cb3 = CRM114::Classifier.new(cb2.flags)
     cb3.config do |config|
       config.classes = cb2.classes
-      config.datablock_size = cb2.datablock_size + 20000
+      config.datablock_size = cb2.datablock_size 
       config.load_datablock_memory(dump2_f)
     end
 
     dump3 = cb3.datablock_memory
 
-    # These right now aren't passing bc of file stuff who knows
-    # assert_equal dump2.length, dump3.length
-    # assert_equal dump2, dump3
+    assert_equal dump2.length, dump3.length
+    assert_equal dump2, dump3
 
     [ALICE8, ALICE9, ALICE10, HAMLET8, HAMLET9, HAMLET10].each do |text|
       result2 = cb2.classify_text(text)

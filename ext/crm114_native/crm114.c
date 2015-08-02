@@ -522,7 +522,10 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
   Classifier *classifier = DATA_PTR(obj);
 
   if (classifier->cb->datablock_size < RSTRING_LEN(mem)) {
-    rb_raise(rb_eRuntimeError, "datablock size set for classifier is smaller than that of datablock memory loaded");
+    rb_raise(rb_eRuntimeError,
+      "datablock size set for classifier (%lu) is smaller than that of datablock memory loaded (%lu)",
+      classifier->cb->datablock_size,
+      RSTRING_LEN(mem));
     return Qnil;
   }
 
