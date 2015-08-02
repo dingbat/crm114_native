@@ -171,7 +171,7 @@ void debug(const char *fmt, ...)
   if (DEBUG == 0) {
     return;
   }
-  
+
   char buf[500];
 
   va_list args;
@@ -539,6 +539,8 @@ static VALUE config_set_classes(VALUE obj, VALUE rb_classes)
     classifier->cb->how_many_classes = 0;
     rb_hash_foreach(rb_classes, classes_hash_foreach, obj);
   }
+
+  crm114_cb_setblockdefaults(classifier->cb);
 
   return rb_classes;
 }
