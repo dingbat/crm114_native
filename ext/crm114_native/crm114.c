@@ -12,7 +12,7 @@ typedef struct Classifier
 {
   CRM114_CONTROLBLOCK *cb;
   CRM114_DATABLOCK *db;
-  int preloaded_db;
+  int has_db;
 } Classifier;
 
 typedef struct Result
@@ -199,16 +199,21 @@ static void crm_mark(Classifier *crm)
 
 static void crm_free(Classifier *crm)
 {
-  free(crm->cb);
-  free(crm->db);
+  if (crm->cb) {
+    free(crm->cb);
+  }
+  if (crm->has_db) {
+    free(crm->db);
+  }
   free(crm);
 }
 
 static VALUE crm_init(VALUE obj, VALUE flags)
 {
   Classifier *crm = malloc(sizeof(Classifier));
+  crm->cb = NULL;
   if ((crm->cb = crm114_new_cb())) {
-    crm->preloaded_db = 0;
+    crm->has_db = 0;
 
     DATA_PTR(obj) = crm;
 
@@ -222,16 +227,21 @@ static VALUE crm_init(VALUE obj, VALUE flags)
   return Qnil;
 }
 
-static VALUE crm_config(VALUE obj)
+static VALUE _crm_config(VALUE obj, int with_db_defaults)
 {
   Classifier *crm = DATA_PTR(obj);
 
   VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
   rb_yield(new_config);
 
-  if (crm->preloaded_db == 0) {
-    crm114_cb_setblockdefaults(crm->cb);
-    if ((crm->db = crm114_new_db(crm->cb)) == NULL) {
+  if (crm->has_db == 0) {
+    if (with_db_defaults) {
+      crm114_cb_setblockdefaults(crm->cb);
+    }
+
+    if ((crm->db = crm114_new_db(crm->cb))) {
+      crm->has_db = 1;
+    } else {
       rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock");
     }
   }
@@ -239,21 +249,14 @@ static VALUE crm_config(VALUE obj)
   return Qnil;
 }
 
+static VALUE crm_config(VALUE obj)
+{
+  return _crm_config(obj, 1);
+}
+
 static VALUE crm_config_without_db_defaults(VALUE obj)
 {
-  Classifier *crm = DATA_PTR(obj);
-  crm114_cb_setblockdefaults(crm->cb);
-
-  VALUE new_config = rb_funcall(ConfigClass, rb_intern("new"), 1, obj);
-  rb_yield(new_config);
-
-  if (crm->preloaded_db == 0) {
-    if ((crm->db = crm114_new_db(crm->cb)) == NULL) {
-      rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock");
-    }
-  }
-
-  return Qnil;
+    return _crm_config(obj, 0);
 }
 
 static VALUE crm_get_classes(VALUE obj)
@@ -464,7 +467,7 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 
   if ((classifier->db = malloc(classifier->cb->datablock_size))) {
     memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
-    classifier->preloaded_db = 1;
+    classifier->has_db = 1;
   } else {
     rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock for loading memory");
   }
