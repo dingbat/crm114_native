@@ -66,29 +66,23 @@ class CRM114Test < Test::Unit::TestCase
     @cb.learn_text(:alice, ALICE3)
     @cb.learn_text(:alice, ALICE4)
     @cb.learn_text(:alice, ALICE5)
+    @cb.learn_text(:alice, ALICE6)
+    @cb.learn_text(:alice, ALICE7)
     @cb.learn_text(:hamlet, HAMLET1)
     @cb.learn_text(:hamlet, HAMLET2)
     @cb.learn_text(:hamlet, HAMLET3)    
     @cb.learn_text(:hamlet, HAMLET4)    
+    @cb.learn_text(:hamlet, HAMLET5)    
+    @cb.learn_text(:hamlet, HAMLET6)    
+    @cb.learn_text(:hamlet, HAMLET7)    
     
     dump = @cb.datablock_memory
 
-    File.open("dump", "w") { |file|
-      file.write(dump)
-      file.flush
-    }
-
-    dump_fc = File.read("dump")
-
-    File.delete("dump")
-
-    result = @cb.classify_text(HAMLET5)
-
     cb2 = CRM114::Classifier.new(@cb.flags)
     cb2.config do |config|
-      config.datablock_size = @cb.datablock_size
       config.classes = @cb.classes
-      config.load_datablock_memory(dump_fc)
+      config.datablock_size = @cb.datablock_size
+      config.load_datablock_memory(dump)
     end
 
     dump2 = cb2.datablock_memory
@@ -96,33 +90,45 @@ class CRM114Test < Test::Unit::TestCase
     assert_equal dump.length, dump2.length
     assert_equal dump, dump2
 
-    result2 = cb2.classify_text(HAMLET5)
+    [ALICE8, ALICE9, ALICE10, HAMLET8, HAMLET9, HAMLET10].each do |text|
+      result1 = @cb.classify_text(text)
+      result2 = cb2.classify_text(text)
 
-    assert_equal result.error, result2.error
-    assert_equal result.best_match, result2.best_match
-    assert_equal result[:hamlet], result2[:hamlet]
-    assert_equal result[:alice], result2[:alice]
+      assert_equal result1.error, result2.error
+      assert_equal result1[:alice], result2[:alice]
+      assert_equal result1[:hamlet], result2[:hamlet]
+      assert_equal result1.best_match, result2.best_match
+    end
 
-    # try serializing again (the clone)
+    # try serializing again, just to make sure (the clone)
 
     cb3 = CRM114::Classifier.new(cb2.flags)
     cb3.config do |config|
-      config.datablock_size = cb2.datablock_size
       config.classes = cb2.classes
+      config.datablock_size = cb2.datablock_size
       config.load_datablock_memory(dump2)
     end
 
-    dump3 = cb3.datablock_memory
+    # this time, try over a file
+    File.open("dump3", "w") do |file|
+      file.write(cb3.datablock_memory)
+      file.flush
+    end
+    dump3 = File.read("dump3")
+    File.delete("dump3")
 
     assert_equal dump2.length, dump3.length
     assert_equal dump2, dump3
 
-    result3 = cb3.classify_text(HAMLET5)
+    [ALICE8, ALICE9, ALICE10, HAMLET8, HAMLET9, HAMLET10].each do |text|
+      result2 = cb2.classify_text(text)
+      result3 = cb3.classify_text(text)
 
-    assert_equal result2.error, result3.error
-    assert_equal result2.best_match, result3.best_match
-    assert_equal result2[:hamlet], result3[:hamlet]
-    assert_equal result2[:alice], result3[:alice]
+      assert_equal result2.error, result3.error
+      assert_equal result2[:alice], result3[:alice]
+      assert_equal result2[:hamlet], result3[:hamlet]
+      assert_equal result2.best_match, result3.best_match
+    end
   end
 
   def test_invalid_db_size
