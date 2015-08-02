@@ -198,13 +198,17 @@ static void crm_free(Classifier *crm)
 static VALUE crm_init(VALUE obj, VALUE flags)
 {
   Classifier *crm = malloc(sizeof(Classifier));
-  crm->cb = crm114_new_cb();
-  crm->preloaded_db = 0;
+  if ((crm->cb = crm114_new_cb())) {
+    crm->preloaded_db = 0;
 
-  DATA_PTR(obj) = crm;
+    DATA_PTR(obj) = crm;
 
-  crm114_cb_setflags(crm->cb, NUM2LONG(flags));
-  crm114_cb_setclassdefaults(crm->cb);
+    crm114_cb_setflags(crm->cb, NUM2LONG(flags));
+    crm114_cb_setclassdefaults(crm->cb);
+  }
+  else {
+    rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 control block");
+  }
 
   return Qnil;
 }
@@ -218,7 +222,9 @@ static VALUE crm_config(VALUE obj)
 
   if (crm->preloaded_db == 0) {
     crm114_cb_setblockdefaults(crm->cb);
-    crm->db = crm114_new_db(crm->cb);
+    if ((crm->db = crm114_new_db(crm->cb)) == NULL) {
+      rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock");
+    }
   }
 
   return Qnil;
@@ -233,7 +239,9 @@ static VALUE crm_config_without_db_defaults(VALUE obj)
   rb_yield(new_config);
 
   if (crm->preloaded_db == 0) {
-    crm->db = crm114_new_db(crm->cb);
+    if ((crm->db = crm114_new_db(crm->cb)) == NULL) {
+      rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock");
+    }
   }
 
   return Qnil;
@@ -440,9 +448,12 @@ static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 {
   Classifier *classifier = DATA_PTR(obj);
 
-  classifier->db = malloc(classifier->cb->datablock_size);
-  memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
-  classifier->preloaded_db = 1;
+  if ((classifier->db = malloc(classifier->cb->datablock_size))) {
+    memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
+    classifier->preloaded_db = 1;
+  } else {
+    rb_raise(rb_eRuntimeError, "couldn't allocate CRM114 datablock for loading memory");
+  }
 
   return Qnil;
 }
