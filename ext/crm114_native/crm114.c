@@ -24,6 +24,9 @@ typedef struct Result
 #define BOOL2INT(x)  (((x) == Qtrue)?1:0)
 #define INT2BOOL(x)  ((x)?Qtrue:Qfalse)
 
+
+static VALUE crm_class_debug(VALUE module);
+
 // CONFIG
 
 static VALUE config_alloc(VALUE klass);
@@ -75,6 +78,7 @@ static void _result_set_error(VALUE obj, CRM114_ERR error);
 static VALUE ConfigClass;
 static VALUE ResultClass;
 static VALUE ClassResultStruct;
+static int DEBUG = 0;
 
 void clean_exit_on_sig(int sig_num)
 {
@@ -84,6 +88,7 @@ void clean_exit_on_sig(int sig_num)
 void Init_crm114_native()
 {
   VALUE crm114_module = rb_define_module("CRM114");
+  rb_define_singleton_method(crm114_module, "debug!", crm_class_debug, 0);
 
   //
   // Classifier
@@ -159,6 +164,30 @@ void Init_crm114_native()
   rb_define_const(error_module, "NOT_YET_IMPLEMENTED", INT2FIX(CRM114_NOT_YET_IMPLEMENTED));
 
   signal(SIGSEGV, clean_exit_on_sig); // Trap segfault
+}
+
+void debug(const char *fmt, ...)
+{
+  if (DEBUG == 0) {
+    return;
+  }
+  
+  char buf[500];
+
+  va_list args;
+
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  rb_funcall(rb_mKernel, rb_intern("puts"), 1, rb_str_new2(buf));
+}
+
+VALUE crm_class_debug(VALUE module)
+{
+  DEBUG = 1;
+  debug("CRM114 debug mode enabled");
+  return Qtrue;
 }
 
 int index_of_class(VALUE the_class, int how_many_classes, CRM114_CONTROLBLOCK *cb, CRM114_MATCHRESULT *result)

@@ -5,6 +5,8 @@ require_relative './lit_frags'
 
 class CRM114Test < Test::Unit::TestCase
   def setup
+    CRM114.debug!
+    
     @flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
     @cb = CRM114::Classifier.new(@flags)
     @cb.config do |config|
