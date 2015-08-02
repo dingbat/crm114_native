@@ -114,6 +114,38 @@ class CRM114Test < Test::Unit::TestCase
     assert_equal result2[:alice], result3[:alice]
   end
 
+  def test_invalid_db_size
+    @cb.learn_text(:alice, ALICE1)
+    @cb.learn_text(:alice, ALICE2)
+    @cb.learn_text(:alice, ALICE3)
+    @cb.learn_text(:alice, ALICE4)
+    @cb.learn_text(:alice, ALICE5)
+    @cb.learn_text(:hamlet, HAMLET1)
+    @cb.learn_text(:hamlet, HAMLET2)
+    @cb.learn_text(:hamlet, HAMLET3)    
+    @cb.learn_text(:hamlet, HAMLET4)    
+    
+    dump = @cb.datablock_memory
+
+    result = @cb.classify_text(HAMLET5)
+
+    cb2 = CRM114::Classifier.new(@cb.flags)
+
+    # should be an error that db_size < dump size
+    assert_raises(RuntimeError) do
+      cb2.config do |config|
+        config.datablock_size = 200
+        config.load_datablock_memory(dump)
+        config.classes = @cb.classes
+      end
+    end
+
+    # should segfault
+    assert_raises(RuntimeError) do
+      cb2.classify_text(HAMLET5)
+    end
+  end
+
   def test_result_classes
     @cb.learn_text(:alice, ALICE1)
     @cb.learn_text(:alice, ALICE2)

@@ -1,5 +1,7 @@
 #include "ruby.h"
 
+#include <signal.h>
+
 #include "crm114_sysincludes.h"
 #include "crm114_config.h"
 #include "crm114_structs.h"
@@ -73,6 +75,11 @@ static void _result_set_error(VALUE obj, CRM114_ERR error);
 static VALUE ConfigClass;
 static VALUE ResultClass;
 static VALUE ClassResultStruct;
+
+void clean_exit_on_sig(int sig_num)
+{
+  rb_raise(rb_eRuntimeError, "segfault in CRM114 gem");
+}
 
 void Init_crm114_native()
 {
@@ -150,6 +157,8 @@ void Init_crm114_native()
   rb_define_const(error_module, "CLASS_FULL", INT2FIX(CRM114_CLASS_FULL));
   rb_define_const(error_module, "OPEN_FAILED", INT2FIX(CRM114_OPEN_FAILED));
   rb_define_const(error_module, "NOT_YET_IMPLEMENTED", INT2FIX(CRM114_NOT_YET_IMPLEMENTED));
+
+  signal(SIGSEGV, clean_exit_on_sig); // Trap segfault
 }
 
 int index_of_class(VALUE the_class, int how_many_classes, CRM114_CONTROLBLOCK *cb, CRM114_MATCHRESULT *result)
@@ -447,6 +456,11 @@ static VALUE config_init(VALUE obj, VALUE classifier)
 static VALUE config_load_datablock_memory(VALUE obj, VALUE mem)
 {
   Classifier *classifier = DATA_PTR(obj);
+
+  if (classifier->cb->datablock_size < RSTRING_LEN(mem)) {
+    rb_raise(rb_eRuntimeError, "datablock size set for classifier is smaller than that of datablock memory loaded");
+    return Qnil;
+  }
 
   if ((classifier->db = malloc(classifier->cb->datablock_size))) {
     memcpy(classifier->db, RSTRING_PTR(mem), classifier->cb->datablock_size);
