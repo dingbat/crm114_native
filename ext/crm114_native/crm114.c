@@ -8,6 +8,9 @@
 #include "crm114_lib.h"
 #include "crm114_internal.h"
 
+extern int crm114__user_trace;
+extern int crm114__internal_trace;
+
 typedef struct Classifier
 {
   CRM114_CONTROLBLOCK *cb;
@@ -25,7 +28,7 @@ typedef struct Result
 #define INT2BOOL(x)  ((x)?Qtrue:Qfalse)
 
 
-static VALUE crm_class_debug(VALUE module);
+static VALUE crm_class_debug(int argc, VALUE*argv, VALUE module);
 
 // CONFIG
 
@@ -88,7 +91,7 @@ void clean_exit_on_sig(int sig_num)
 void Init_crm114_native()
 {
   VALUE crm114_module = rb_define_module("CRM114");
-  rb_define_singleton_method(crm114_module, "debug!", crm_class_debug, 0);
+  rb_define_singleton_method(crm114_module, "debug!", crm_class_debug, -1);
 
   //
   // Classifier
@@ -183,9 +186,22 @@ void debug(const char *fmt, ...)
   rb_funcall(rb_mKernel, rb_intern("puts"), 1, rb_str_new2(buf));
 }
 
-VALUE crm_class_debug(VALUE module)
+VALUE crm_class_debug(int argc, VALUE*argv, VALUE module)
 {
+  VALUE rb_level;
+  rb_scan_args(argc, argv, "01", &rb_level);
+
+  int level = 0;
+  if (!NIL_P(rb_level))
+      level = FIX2INT(rb_level);
+
   DEBUG = 1;
+  if (level > 0) {
+    crm114__internal_trace = 1;
+    if (level > 1) {
+      crm114__user_trace = 1;
+    }
+  }
   debug("CRM114 debug mode enabled");
   return Qtrue;
 }

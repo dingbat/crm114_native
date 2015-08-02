@@ -5,8 +5,8 @@ require_relative './lit_frags'
 
 class CRM114Test < Test::Unit::TestCase
   def setup
-    CRM114.debug!
-    
+    # CRM114.debug! 1
+
     @flags = CRM114::Classifier::SVM | CRM114::Classifier::STRING
     @cb = CRM114::Classifier.new(@flags)
     @cb.config do |config|
@@ -73,13 +73,22 @@ class CRM114Test < Test::Unit::TestCase
     
     dump = @cb.datablock_memory
 
+    File.open("dump", "w") { |file|
+      file.write(dump)
+      file.flush
+    }
+
+    dump_fc = File.read("dump")
+
+    File.delete("dump")
+
     result = @cb.classify_text(HAMLET5)
 
     cb2 = CRM114::Classifier.new(@cb.flags)
     cb2.config do |config|
       config.datablock_size = @cb.datablock_size
       config.classes = @cb.classes
-      config.load_datablock_memory(dump)
+      config.load_datablock_memory(dump_fc)
     end
 
     dump2 = cb2.datablock_memory
