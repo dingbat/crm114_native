@@ -86,7 +86,12 @@ static int DEBUG = 0;
 
 void clean_exit_on_sig(int sig_num)
 {
-  rb_raise(rb_eRuntimeError, "segfault in CRM114 gem");
+  if (sig_num == SIGSEGV) {
+    rb_raise(rb_eRuntimeError, "segfault in CRM114 gem");
+  }
+  else if (sig_num == SIGFPE) {
+    rb_raise(rb_eRuntimeError, "floating point exception in CRM114 gem ('8' probably)");
+  }
 }
 
 void Init_crm114_native()
@@ -169,6 +174,7 @@ void Init_crm114_native()
   rb_define_const(error_module, "NOT_YET_IMPLEMENTED", INT2FIX(CRM114_NOT_YET_IMPLEMENTED));
 
   signal(SIGSEGV, clean_exit_on_sig); // Trap segfault
+  signal(SIGFPE, clean_exit_on_sig); // Trap "floating point exception" that comes up with OSB
 }
 
 void debug(const char *fmt, ...)
