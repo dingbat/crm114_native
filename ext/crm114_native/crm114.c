@@ -157,7 +157,13 @@ void Init_crm114_native()
   rb_define_method(ResultClass, "error", result_get_error, 0);
   rb_define_method(ResultClass, "[]", result_get_class, 1);
 
-  ClassResultStruct = rb_eval_string_protect("Struct.new('ClassificationResult', :pR, :probability, :documents, :features, :hits)", 0);
+  ClassResultStruct = rb_eval_string_protect("Struct.new('ClassificationResult',\
+    :name,\
+    :pR,\
+    :probability,\
+    :documents,\
+    :features,\
+    :hits)", 0);
 
   //
   // Errors
@@ -447,7 +453,8 @@ static VALUE result_get_class(VALUE obj, VALUE key)
 
   int idx = index_of_class(key, res->result.how_many_classes, NULL, &(res->result));
 
-  return rb_funcall(ClassResultStruct, rb_intern("new"), 5, 
+  return rb_funcall(ClassResultStruct, rb_intern("new"), 6,
+    rb_str_new2(res->result.class[idx].name),
     DBL2NUM(res->result.class[idx].pR),
     DBL2NUM(res->result.class[idx].prob),
     INT2FIX(res->result.class[idx].documents),

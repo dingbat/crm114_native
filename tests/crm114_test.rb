@@ -180,8 +180,9 @@ class CRM114Test < Test::Unit::TestCase
     result = @cb.classify_text(ALICE3)
 
     assert_nil result.error
-    assert_equal result[:alice].documents, 2
-    assert_equal result[:hamlet].documents, 3
+    assert_equal "alice", result[:alice].name
+    assert_equal 2, result[:alice].documents
+    assert_equal 3, result[:hamlet].documents
     assert_not_nil result[:alice]
     assert_not_nil result[:alice].pR
     assert_not_nil result[:alice].probability
@@ -190,5 +191,14 @@ class CRM114Test < Test::Unit::TestCase
     assert_not_nil result[:hamlet]
     
     assert result[:alice].probability > result[:hamlet].probability, "Alice should have greater confidence than hamlet"
+
+    result.each do |result_for_class|
+      assert_not_nil result_for_class
+      assert_not_nil result_for_class.name
+      assert_not_nil result_for_class.pR
+      assert_not_nil result_for_class.probability
+      assert_not_nil result_for_class.features
+      assert_not_nil result_for_class.hits      
+    end
   end
 end
