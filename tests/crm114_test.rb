@@ -190,7 +190,10 @@ class CRM114Test < Test::Unit::TestCase
     assert_not_nil result[:alice].hits
     assert_not_nil result[:hamlet]
     
-    assert result[:alice].probability > result[:hamlet].probability, "Alice should have greater confidence than hamlet"
+    assert result[:alice].probability > result[:hamlet].probability,
+      "Alice should have greater confidence than hamlet"
+
+    assert_equal [result[:alice], result[:hamlet]], result.classification_results
 
     result.each do |result_for_class|
       assert_not_nil result_for_class

@@ -73,6 +73,8 @@ static VALUE result_best_match(VALUE obj);
 static VALUE result_text_features(VALUE obj);
 static VALUE result_get_error(VALUE obj);
 static VALUE result_get_class(VALUE obj, VALUE key);
+static VALUE result_each(VALUE obj);
+static VALUE result_classification_results(VALUE obj);
 
 //(private)
 static void _result_set_success(VALUE obj, CRM114_MATCHRESULT result);
@@ -156,6 +158,8 @@ void Init_crm114_native()
   rb_define_method(ResultClass, "text_features", result_text_features, 0);
   rb_define_method(ResultClass, "error", result_get_error, 0);
   rb_define_method(ResultClass, "[]", result_get_class, 1);
+  rb_define_method(ResultClass, "each", result_each, 0);
+  rb_define_method(ResultClass, "classification_results", result_classification_results, 0);
 
   ClassResultStruct = rb_eval_string_protect("Struct.new('ClassificationResult',\
     :name,\
@@ -435,6 +439,17 @@ static void _result_set_error(VALUE obj, CRM114_ERR error)
   res->error = error;
 }
 
+static VALUE _result_get_classification_result(Result *res, int idx)
+{
+  return rb_funcall(ClassResultStruct, rb_intern("new"), 6,
+    rb_str_new2(res->result.class[idx].name),
+    DBL2NUM(res->result.class[idx].pR),
+    DBL2NUM(res->result.class[idx].prob),
+    INT2FIX(res->result.class[idx].documents),
+    INT2FIX(res->result.class[idx].features),
+    INT2FIX(res->result.class[idx].hits));
+}
+
 static VALUE result_get_error(VALUE obj)
 {
   Result *res = DATA_PTR(obj);
@@ -442,6 +457,34 @@ static VALUE result_get_error(VALUE obj)
     return Qnil;
   }
   return INT2FIX(res->error);
+}
+
+static VALUE result_classification_results(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  if (res->error != CRM114_OK) {
+    return Qnil;
+  }
+
+  VALUE ary = rb_ary_new2(res->result.how_many_classes);
+  for (int i = 0; i < res->result.how_many_classes; i++) {
+    rb_ary_push(ary, _result_get_classification_result(res, i));
+  }
+  return ary;
+}
+
+static VALUE result_each(VALUE obj)
+{
+  Result *res = DATA_PTR(obj);
+  if (res->error != CRM114_OK) {
+    return Qnil;
+  }
+
+  for (int i = 0; i < res->result.how_many_classes; i++) {
+    rb_yield(_result_get_classification_result(res, i));
+  }
+
+  return Qnil;
 }
 
 static VALUE result_get_class(VALUE obj, VALUE key)
@@ -452,14 +495,7 @@ static VALUE result_get_class(VALUE obj, VALUE key)
   }
 
   int idx = index_of_class(key, res->result.how_many_classes, NULL, &(res->result));
-
-  return rb_funcall(ClassResultStruct, rb_intern("new"), 6,
-    rb_str_new2(res->result.class[idx].name),
-    DBL2NUM(res->result.class[idx].pR),
-    DBL2NUM(res->result.class[idx].prob),
-    INT2FIX(res->result.class[idx].documents),
-    INT2FIX(res->result.class[idx].features),
-    INT2FIX(res->result.class[idx].hits));
+  return _result_get_classification_result(res, idx);
 }
 
 static VALUE result_total_success_probability(VALUE obj)
