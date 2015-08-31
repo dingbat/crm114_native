@@ -88,3 +88,9 @@ more complete documentation coming later...
 ## testing
 
 run `rake` (this will `rake compile` as well)
+
+## setup
+
+```
+brew install tre
+```

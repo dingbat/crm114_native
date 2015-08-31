@@ -6,9 +6,12 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    power_assert (0.2.2)
     rake (10.4.2)
     rake-compiler (0.9.5)
       rake
+    test-unit (3.0.8)
+      power_assert
 
 PLATFORMS
   ruby
@@ -16,3 +19,4 @@ PLATFORMS
 DEPENDENCIES
   crm114_native!
   rake-compiler
+  test-unit
